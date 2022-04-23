@@ -1,0 +1,96 @@
+Import guiBasic
+
+Class Gui_Tab Extends Gui
+	Method New(Text:String, Parent:Gui)
+		Self.Type = "Tab"
+		Self.X = 0
+		Self.Y = 0
+		SetFont(Gui.NormalFont)
+		Self.W = TextWidth(Text) + 10
+		Self.H = TextHeight("Testing123") + 4
+		Self.Text = Text
+		Self.Parent = Parent
+		Self.Parent.HasTabs = 1
+		Self.Parent.Children.AddLast(Self)
+		Self.Children = New List<Gui>
+		If Parent.SelectedTab = Null Then
+			Parent.SelectedTab = Self
+			Self.IsSelected = 1
+		End If
+		ZOrder(Self.Parent)
+	End Method
+	
+	Method Draw2()
+		Local AtlasX = 560
+		Local AtlasY = 90
+		
+		If Gui.Over = Self And Parent.SelectedTab <> Self Then AtlasX = 590
+		If Gui.Down = Self And Parent.SelectedTab <> Self Then AtlasX = 620
+		If Parent.SelectedTab = Self Then AtlasY = 120
+		If Self.RealActive = 0 Then AtlasX = 650
+		If Self.RealActive = 0 And Parent.SelectedTab = Self Then AtlasX = 590
+		
+		'Box
+		Gui.Draw3x3(RealX, RealY, W, H, AtlasX, AtlasY, 30, 30, 10)
+
+		'Text
+		SetFont(NormalFont)
+		Local TextY = RealY + ( (H - TextHeight("Testing123")) / 2.0)
+		Local TextX = RealX + ( (W - TextWidth(Text)) / 2.0)
+		Local OldAlpha:Float = GetAlpha()
+		If Self.RealActive = 0 Then SetAlpha(GetAlpha() -0.6)
+		
+		
+		If RealActive = 1 Then
+			If Parent.SelectedTab = Self Then
+				SetFont(NormalFontInv)
+				DrawText(Text, TextX, TextY)
+			Else
+				SetFont(NormalFont)
+				DrawText(Text, TextX, TextY)
+			End If
+		Else
+			SetFont(NormalFont)
+			DrawText(Text, TextX, TextY)
+		End If
+		
+		SetAlpha(OldAlpha)
+		
+	End Method
+	
+	
+	Method Update2()
+		'X,Y,W,H (Xin parent update)
+		
+		'UpdateCanvas
+		If Canvas <> Null Then
+			Canvas.X = Parent.CanvasX
+			Canvas.Y = Parent.CanvasY
+			Canvas.W = Parent.CanvasW
+			Canvas.H = Parent.CanvasH
+			Canvas.Visible = RealVisible
+			Canvas.Active = RealActive
+			Canvas.Update()
+		Endif
+		SetFont(NormalFont)
+		If Parent.Type = "Window" Then
+			
+			Self.Y = (TextHeight("Testing123") + 5) * -1
+			
+		Else
+			Self.Y = (TextHeight("Testing123") + 4) * -1
+		End If
+	
+		Self.W = TextWidth(Text) + 10
+		Self.H = TextHeight("Testing123") + 4
+		
+		If Gui.Clicked = Self Then
+			If Parent.SelectedTab <> Null Then Parent.SelectedTab.IsSelected = 0
+			IsSelected = 1
+			Parent.SelectedTab = Self
+			
+		End If
+	End Method
+	
+End Class
+

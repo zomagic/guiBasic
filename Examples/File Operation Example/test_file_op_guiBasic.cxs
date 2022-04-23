@@ -1,0 +1,54 @@
+'File Operations Example
+
+Import mojo
+Import guiBasic
+Import os
+Import guiBasic.gbFileoperations
+
+Global MainScreen:Gui
+Global Button1:Gui
+Global Button2:Gui
+Global Textbox:Gui
+
+Function Main()
+	New Game()
+End Function
+
+Class Game Extends App
+	Method OnCreate()
+		SetUpdateRate(60)
+		MainScreen = Gui.CreateScreen()
+		Button1 = Gui.CreateButton(20, 20, 120, 24, "Load File", MainScreen)
+		Button2 = Gui.CreateButton(150, 20, 120, 24, "Save File", MainScreen)
+		Textbox = Gui.CreateTextBox(20, 55, 270, 200, MainScreen, "Text to be saved")
+	End Method
+	
+	Method OnUpdate()
+		Gui.Update()
+		
+		If Button1.IsClicked Then Gui_FileOperation.LoadFile("txt", "LoadFile")
+		If Button2.IsClicked Then Gui_FileOperation.SaveFile(".txt", "SaveFile")
+		
+		Local LoadReturn:String = Gui_FileOperation.CheckLoadReturn("LoadFile")
+		Local SaveReturn:String = Gui_FileOperation.CheckSaveReturn("SaveFile")
+		
+		'Load File
+		If LoadReturn <> "" Then
+			Textbox.Text = os.LoadString(LoadReturn)
+		EndIf
+		'SaveFile
+		If SaveReturn <> "" Then
+			os.SaveString(Textbox.Text, SaveReturn)
+		End If
+	End Method
+	
+	
+	Method OnRender()
+		Cls(240, 240, 240)
+		SetColor(255, 255, 255)
+		Gui.Draw()
+	End Method
+End Class
+
+
+

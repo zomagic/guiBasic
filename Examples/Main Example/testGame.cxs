@@ -1,0 +1,81 @@
+Import main___test_guiBasic
+
+
+Global GameScreen:Gui
+	Global LevelsWindow:Gui
+	Global GameWindow:Gui
+	
+	Global GameMenu:Gui
+		Global MenuRestore:Gui
+		Global MenuQuit:Gui
+	Global OptionsMenu:Gui
+		Global MenuSFX:Gui
+		Global MenuMusic:Gui
+		Global MenuLevels:Gui
+		
+		
+Function SetupGame()
+	GameScreen = Gui.CreateScreen()
+	GameWindow = Gui.CreateWindow(50, 50, 450, 300, "Game Window", GameScreen, 1, 1, 1, 1, 1, 1, 1)
+	GameWindow.Canvas = New GameCanvas
+	LevelsWindow = Gui.CreateWindow(20, 20, 200, 160, "Sound Levels", GameScreen, 2, 1, 0, 0, 0, 0, 0)
+	LevelsWindow.Visible = 0
+		Gui.CreateLabel(10, 10, "SFX Volume", LevelsWindow)
+		Gui.CreateSlider(10, 30, 170, 25, 0, 100, LevelsWindow, 100)
+		Gui.CreateLabel(10, 70, "Music Volume", LevelsWindow)
+		Gui.CreateSlider(10, 90, 170, 25, 0, 100, LevelsWindow, 100)
+		
+	GameMenu = Gui.CreateMenu("Game", GameScreen)
+		MenuRestore = Gui.CreateMenuItem("Restore game window", GameMenu)
+		MenuQuit = Gui.CreateMenuItem("Quit to main screen", GameMenu)
+	OptionsMenu = Gui.CreateMenu("Options", GameScreen)
+		MenuSFX = Gui.CreateMenuItem("SFX", OptionsMenu, 1, 1)
+		MenuMusic = Gui.CreateMenuItem("Music", OptionsMenu, 1, 1)
+		MenuLevels = Gui.CreateMenuItem("Sound levels", OptionsMenu)
+		
+	
+End Function
+
+Function UpdateGameGui()
+	GameWindow.StatusText = FPS
+
+	
+	If MenuRestore.IsClicked Then GameWindow.Visible = 1
+	If MenuQuit.IsClicked Then Gui.MsgBox("Confirm", "Quit Game?", 2, 1, "Quit")
+	If MenuLevels.IsClicked Then LevelsWindow.Visible = 1; Gui.SetCurrentWindow(LevelsWindow)
+	
+	
+	If Gui.CheckMsgBox("Quit",1) =1 Then TransitionToScreen(MainScreen)
+End Function
+
+
+
+Class GameCanvas Extends guiBasic_Canvas
+	Field R, G, B, Timer
+	
+	'-- X, Y, W, H are fields of Class guiBasic_Canvas
+	
+	Method Draw()
+		SetColor(R, G, B)
+		DrawRect(X, Y, W, H)
+		SetColor(255, 255, 255)
+		DrawText("Pretend there is a game here! :)", X + 10, Y + 10)
+		DrawText("Select 'Quit' in the 'Game' menu.", X + 10, Y + 25)
+		If Gui.CurrentWindow <> GameWindow Then DrawText("Game Paused - Click on window to start", X + 10, Y + H / 2)
+	End Method
+	
+	Method Update()
+		If Timer < Millisecs() And Gui.CurrentWindow = GameWindow Then
+			R = Rnd(0, 255)
+			G = Rnd(0, 255)
+			B = Rnd(0, 255)
+			
+			Timer = Millisecs() +2000
+			
+		Endif
+		
+		
+	End Method
+	
+End Class
+

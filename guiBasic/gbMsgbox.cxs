@@ -1,0 +1,148 @@
+Import guiBasic
+
+Class Gui_MsgBox Extends Gui
+	Field Window:Gui_Window
+	Field Button1:Gui
+	Field Button2:Gui
+	Field Label:Gui
+	Field Buttons
+	
+	
+	Method New()
+		Self.Type = "MsgBox"
+		Self.Children = New List<Gui>
+		Self.PartOfFileOperations = 1
+		
+		Self.Parent = CurrentScreen
+		Self.X = 0
+		Self.Y = 0
+		Self.W = DeviceWidth()
+		Self.H = DeviceHeight()
+		Self.Window = New Gui_Window(0, 0, 100, 100, "Test", Self, 2, 1, 0, 0, 0, 1, 0)
+		Self.Window.PartOfFileOperations = 1
+		Self.Window.AddIcon(Gui.Atlas, 60, 320, 20, 20)
+		Self.Window.Visible = 0
+		Self.Label = Gui.CreateLabel(0, 0, "Test", Self.Window, 1, 0)
+		Self.Label.PartOfFileOperations = 1
+		Self.Button1 = Gui.CreateButton(0, 0, 50, 25, "Ok", Self.Window, 1)
+		Self.Button1.PartOfFileOperations = 1
+		Self.Button2 = Gui.CreateButton(0, 0, 60, 25, "Cancel", Self.Window, 0)
+		Self.Button2.PartOfFileOperations = 1
+		Self.Visible = 0
+	End Method
+	
+	
+	
+	
+	Function Create(Title:String, Text:String, Buttons = 1, CloseButton, ID:String = "")
+		Local WW, HH, XX, YY
+		SetFont(NormalFont)
+		WW = TextWidth(Text) + 20
+		HH = TextHeight(Text) + 20 + TitleBarHeight + 40
+		If Buttons > 1 Then
+			If WW < 140 Then WW = 140
+		End If
+		GuiMessageBox.Window.Closeable = CloseButton
+		GuiMessageBox.Parent = CurrentScreen
+		GuiMessageBox.Visible = 1
+		GuiMessageBox.Window.Visible =1
+		GuiMessageBox.Window.Active = 1
+		
+		SetFont(Gui.TitleFont)
+		If WW < TextWidth(Title) + (TitleBarHeight*4) Then WW = TextWidth(Title) + (TitleBarHeight * 4)
+		GuiMessageBox.Window.W = WW
+		GuiMessageBox.Window.H = HH
+		GuiMessageBox.Window.Text = Title
+		GuiMessageBox.Label.Text = Text
+		GuiMessageBox.Label.Align = 1
+		GuiMessageBox.Label.Boarder = 0
+		SetFont(NormalFont)
+		GuiMessageBox.Label.X = (GuiMessageBox.Label.Parent.CanvasW - TextWidth(Text)) / 2
+		GuiMessageBox.Label.Y = 10
+		GuiMessageBox.Buttons = Buttons
+		GuiMessageBox.MsgBoxId = ID
+		GuiMessageBox.Window.X = (DeviceWidth() -WW) / 2
+		GuiMessageBox.Window.Y = (DeviceHeight() -HH) / 2
+		
+		Gui.CurrentWindow = GuiMessageBox.Window
+		Gui.OldOnFocus = OnFocus
+		OnFocus = Gui.GuiMessageBox.Button1
+	End Function
+	
+	
+	Method Draw2()
+		Local OldAlpha:Float = GetAlpha()
+		SetColor(0, 0, 0)
+		'SetScissor(0, 0, DeviceWidth(), DeviceHeight())
+		SetAlpha(0.7)
+		DrawRect(0, 0, DeviceWidth(), DeviceHeight())
+		SetColor(255, 255, 255)
+		SetAlpha(OldAlpha)
+		
+	End Method
+	
+	
+	Method Update2()
+		
+	If OnFocus <> Null Then
+		If OnFocus.Parent <> GuiMessageBox.Window Then
+			OnFocus = Gui.GuiMessageBox.Button1	
+		EndIf
+	Else
+		OnFocus = Gui.GuiMessageBox.Button1
+	EndIf
+		SetFont(NormalFont)
+		GuiMessageBox.Label.X = ( (GuiMessageBox.Window.W - TextWidth(GuiMessageBox.Label.Text)) / 2.0) - 6
+		GuiMessageBox.Label.Y = 10
+		
+		If Buttons = 1 Then
+			GuiMessageBox.Button1.Visible = 1
+			GuiMessageBox.Button2.Visible = 0
+			GuiMessageBox.Button1.X = (GuiMessageBox.Window.CanvasW - GuiMessageBox.Button1.W) / 2
+			GuiMessageBox.Button1.Y = (GuiMessageBox.Window.CanvasH - 30)
+		Else
+			GuiMessageBox.Button1.Visible = 1
+			GuiMessageBox.Button2.Visible = 1
+			GuiMessageBox.Button1.X = (GuiMessageBox.Window.CanvasW - GuiMessageBox.Button1.W - 5)
+			GuiMessageBox.Button1.Y = (GuiMessageBox.Window.CanvasH - 30)
+			GuiMessageBox.Button2.X = (GuiMessageBox.Window.CanvasW - GuiMessageBox.Button1.W - GuiMessageBox.Button2.W - 10)
+			GuiMessageBox.Button2.Y = (GuiMessageBox.Window.CanvasH - 30)	
+		End If
+		
+		
+		
+		
+		If GuiMessageBox.Window.Visible = 0 Then
+			GuiMessageBoxReturnedId = GuiMessageBox.MsgBoxId
+			GuiMessageBoxReturned = 1
+			GuiMessageBoxReturnedButton = 0
+			GuiMessageBox.Visible = 0
+			Gui.CurrentScreen.Active = 1
+		End If
+		
+		If Gui.Clicked = GuiMessageBox.Button1 Then
+			GuiMessageBoxReturnedId = GuiMessageBox.MsgBoxId
+			GuiMessageBoxReturned = 1
+			GuiMessageBoxReturnedButton = 1
+			GuiMessageBox.Visible = 0
+			CurrentScreen.Active = 1
+			OnFocus = OldOnFocus
+			'If OnFocus <> Null And OnFocus.RealVisible = 0 Then OnFocus = Null
+			
+		End If
+		
+		If Gui.Clicked = GuiMessageBox.Button2 Then
+			GuiMessageBoxReturnedId = GuiMessageBox.MsgBoxId
+			GuiMessageBoxReturned = 1
+			GuiMessageBoxReturnedButton = 2
+			GuiMessageBox.Visible = 0
+			CurrentScreen.Active = 1
+			OnFocus = OldOnFocus
+			'If OnFocus <> Null And OnFocus.RealVisible = 0 Then OnFocus = Null
+		End If
+		
+		
+	End Method
+	
+End Class
+

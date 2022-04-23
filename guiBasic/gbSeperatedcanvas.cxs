@@ -1,0 +1,113 @@
+Import guiBasic
+
+' NOTE TO SELF SEPERATED CANVAS (Parent) Does not draw or update via main loop  only through seperated canvas update/draw
+
+Class Gui_Canvas Extends Gui
+	Global CanvasList:List<Gui_Canvas>
+	
+	Method New(Parent:Gui)
+		Self.Parent = Parent
+		Self.Visible = 0
+		CanvasList.AddLast(Self)
+		Self.Children = New List<Gui>
+	End Method
+	
+	Function DrawAllCanvas()
+		For Local i:Gui_Canvas = EachIn CanvasList
+			If i.Visible Then i.Draw()
+		Next
+	End Function
+	
+	Function UpdateAllCanvas()
+		For Local i:Gui_Canvas = EachIn CanvasList
+			If i.Visible Then i.Update()
+		Next
+	End Function
+	
+	Method Draw()
+		'DropShadow
+		If Gui.Shadows = 1 Then
+			Local OldAlpha:Float = GetAlpha()
+			Gui.Draw3x3(CanvasX - ShadowOffset, CanvasY - ShadowOffset, CanvasW + ShadowOffset + ShadowOffset, CanvasH + ShadowOffset + ShadowOffset, 710, 270, 40, 40, 10)
+			SetAlpha(OldAlpha)
+		EndIf
+		
+		
+		'Draw The Canvas BG
+		SetColor(255, 255, 255)
+		Local AtlasX = 440
+		Local ATlasY = 20
+		If Parent.Type = "Menu" Or Parent.Type = "MenuItem" Then
+			AtlasX = 510
+		EndIf
+		Gui.Draw3x3(CanvasX - 1, CanvasY - 1, CanvasW + 2, CanvasH + 2, AtlasX, ATlasY, 30, 30)
+		
+		
+		'Draw The Elements
+		SetScissor(CanvasX, CanvasY, CanvasW, CanvasH)
+		Local YCounter = 0
+		For Local i:Gui = EachIn Parent.Children
+			If i.Visible Then
+				i.RealX = CanvasX
+				i.RealY = CanvasY + YCounter
+				i.W = Parent.ChildMaxWidth
+				i.H = Parent.ChildMaxHeight
+				YCounter = YCounter + Parent.ChildMaxHeight
+				i.Draw2()
+				If OnFocus = i Then DrawOnFocus(i)
+			End If
+		Next
+		SetScissor(0,0,DeviceWidth(),DeviceHeight())
+	End Method
+	
+	
+	
+	Method Update()
+		Local ChildCount
+		For Local i:Gui = EachIn Parent.Children
+			If i.Visible Then
+				ChildCount = ChildCount + 1
+				i.DrawingX = CanvasX
+				i.DrawingY = CanvasY
+				i.DrawingW = CanvasW
+				i.DrawingH = CanvasH
+				If i.Active = 1 Then
+					i.RealActive=1
+				End If
+				i.CheckOver()
+			End If
+			i.Update2()
+			If i.IsDown Then OnFocus = i
+			
+			
+		Next
+		
+		
+		CanvasH = ChildCount * Parent.ChildMaxHeight
+		
+		
+		
+		
+		'Close Canvas - Drop Down
+		If Self.Parent.Type = "DropDown" Then
+			If TouchDown() Then
+				If TouchX() < CanvasX Or TouchX > CanvasX + CanvasW Or TouchY() < CanvasY Or TouchY > CanvasY + CanvasH Then
+					If Gui.Over <> Parent Then
+						Parent.Minimised = 1
+						Parent.GuiCanvas.Visible = 0
+						If Parent.Parent <> Null Then Parent.Parent.OpenMenu = Null
+						If OnFocus <> Null And OnFocus.Type = "DropDownItem" Then
+							OnFocus = Self.Parent
+						EndIf
+					End If
+				EndIf
+			End If
+		End If
+		
+		
+		
+		
+		
+	End Method
+	
+End Class

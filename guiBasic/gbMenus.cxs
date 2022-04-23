@@ -1,0 +1,344 @@
+Import guiBasic
+
+
+Class Gui_Menu Extends Gui
+
+	Method New(Text:String, Parent:Gui)
+		Self.Type = "Menu"
+		Self.X = 0
+		SetFont(Gui.NormalFont)
+		Self.Y = (TextHeight("Testing123") + 5)*-1
+		Self.W = TextWidth(Text) + 10
+		Self.H = TextHeight("Testing123") + 4
+		Self.Text = Text
+		Self.Parent = Parent
+		Self.Parent.HasMenu = 1
+		
+		Self.Parent.Children.AddLast(Self)
+		Self.Children = New List<Gui>
+		ZOrder(Self.Parent)
+		Self.Minimised = 1
+		Self.GuiCanvas = New Gui_Canvas(Self)
+		Self.SeperatedCanvas = 1
+		Self.Minimised = 1
+	End Method
+	
+	
+	Method Draw2()
+		
+		Local AtlasX = 480
+		Local AtlasY = 20
+		
+		If Gui.Over = Self Then AtlasY = 50
+		If Gui.Down = Self Then AtlasY = 80
+		If Self.Minimised = 0 Then AtlasY = 80
+		If Self.RealActive = 0 Then AtlasY = 20
+		
+		'Box
+		Gui.Draw3x3(RealX, RealY, W, H, AtlasX, AtlasY, 30, 30, 10)
+
+		'Text
+		SetFont(NormalFont)
+		Local TextY = RealY + ( (H - TextHeight("Testing123")) / 2.0)
+		
+		Local OldAlpha:Float = GetAlpha()
+		If Self.RealActive = 0 Then SetAlpha(GetAlpha() -0.6)
+		
+		If RealActive = 1 Then
+			If Gui.Down = Self Or Self.Minimised = 0 Then
+				SetFont(NormalFontInv)
+				DrawText(Text, RealX + 2, TextY)
+			Else
+				SetFont(NormalFont)
+				DrawText(Text, RealX + 2, TextY)
+			End If
+		Else
+			SetFont(NormalFont)
+			DrawText(Text, RealX + 2, TextY)
+		End If
+		
+		SetAlpha(OldAlpha)
+		
+		
+	End Method
+
+	Method Update2()
+		If Parent.OpenMenu = Null Then
+			Minimised = 1
+			GuiCanvas.Visible = 0
+			Gui_Menu.CloseMenu2(Self)
+		End If
+		
+		
+		'X,Y,W,H
+		SetFont(Gui.NormalFont)
+		If Parent.Type = "Window" Then
+			
+			Self.Y = (TextHeight("Testing123") + 5) * -1
+			If Parent.HasTabs Then Self.Y = Self.Y - TextHeight("Testing123") - 10
+		Else
+			Self.Y = (TextHeight("Testing123") + 4) * -1
+			If Parent.HasTabs Then Self.Y = Self.Y - TextHeight("Testing123") - 10
+		End If
+		Self.W = TextWidth(Text) + 10
+		Self.H = TextHeight("Testing123") + 4
+		
+		
+		If Gui.Clicked = Self Then
+			If Minimised = 1 And Children.Count > 0 Then
+				Minimised = 0
+				GuiCanvas.Visible = 1
+				Parent.OpenMenu = Self
+				OnFocusMenu = Self
+				For Local i:Gui = EachIn Self.Children
+					If i.Type = "MenuItem" And i.Visible = 1 And i.Active = 1 Then
+						OnFocus = i
+						Exit
+					EndIf
+				Next
+			Else
+				Minimised = 1
+				GuiCanvas.Visible = 0
+				If Children.Count > 0 Then Gui_Menu.CloseMenu(Parent.OpenMenu)
+				Parent.OpenMenu = Null
+			End If
+		End If
+		
+		If Gui.Over = Self And Self.RealActive And Self.Minimised = 1 Then
+			If Parent.OpenMenu <> Null Then
+				Parent.OpenMenu.Minimised = 1
+				Parent.OpenMenu.GuiCanvas.Visible = 0
+				
+				CloseMenu(Parent.OpenMenu)
+
+				Parent.OpenMenu = Self
+				Self.Minimised = 0
+				Self.GuiCanvas.Visible = 1
+				For Local i:Gui = EachIn Self.Children
+					If i.Type = "MenuItem" And i.Visible And i.Active Then
+						OnFocus = i
+						Exit
+					End If
+				Next
+				
+			End If
+		End If
+		
+		
+		'Canvas Update
+		If Self.RealVisible = 0 Then GuiCanvas.Visible = 0
+		GuiCanvas.CanvasX = RealX
+		GuiCanvas.CanvasY = RealY + H
+		GuiCanvas.CanvasW = ChildMaxWidth
+		GuiCanvas.CanvasH = ChildMaxHeight * Children.Count
+		
+		'Within Screen
+		If GuiCanvas.CanvasX + GuiCanvas.CanvasW > DeviceWidth() Then GuiCanvas.CanvasX = DeviceWidth() -GuiCanvas.CanvasW
+		If GuiCanvas.CanvasY + GuiCanvas.CanvasH > DeviceHeight() Then GuiCanvas.CanvasY = DeviceHeight() -GuiCanvas.CanvasH
+		
+		If GuiCanvas.CanvasX < 0 Then GuiCanvas.CanvasX = 0
+		If GuiCanvas.CanvasY < 0 Then GuiCanvas.CanvasY = 0
+		
+		
+		
+		
+	End Method
+	
+	Function CloseMenu(M:Gui)
+		OnFocus = OnFocusMenu
+		Repeat
+			If M.Type = "Menu" Then Exit
+			M = M.Parent
+		Forever
+		
+		CloseMenu2(M)
+		M.Parent.OpenMenu = Null
+	End Function
+	
+	Function CloseMenu2(M:Gui)
+	
+		For Local i:Gui = EachIn M.Children
+			CloseMenu2(i)
+		Next
+		
+		M.Minimised = 1
+		If M.GuiCanvas <> Null Then M.GuiCanvas.Visible = 0
+		
+	End Function
+	
+	Function CloseAllMenus()
+		If CurrentScreen.HasMenu And CurrentScreen.OpenMenu <> Null Then CloseMenu(CurrentScreen.OpenMenu)
+		
+		For Local i:Gui = EachIn CurrentScreen.Children
+			If i.Type = "Window" Then
+				CloseAllMenus2(i)
+			End If
+		Next
+		
+		
+			
+	End Function
+	
+	Function CloseAllMenus2(Window:Gui)
+		For Local i:Gui = EachIn Window.Children
+			If i.Type = "Window" Then CloseAllMenus2(i)
+		Next
+		If Window.HasMenu And Window.OpenMenu <> Null Then CloseMenu(Window.OpenMenu)
+	End Function
+	
+End Class
+
+
+Class Gui_MenuItem Extends Gui
+	Method New(Text:String, Parent:Gui, TickBox = 0, Value = 0)
+		Self.Type = "MenuItem"
+		Self.Text = Text
+		Self.Parent = Parent
+		Self.MenuTick = TickBox
+		Self.Value = Value
+		Self.Parent.Children.AddLast(Self)
+		Self.Children = New List<Gui>
+		SetFont(NormalFont)
+		Self.H = TextHeight("Test123") + 4
+		Self.Parent.ChildMaxHeight = Self.H
+		
+		If (TextWidth(Text) + 4 + (H / 2) + 5) > Parent.ChildMaxWidth Then Parent.ChildMaxWidth = (TextWidth(Text) + 4 + (H / 2) + 5)
+		If Parent.ChildMaxWidth < Self.Parent.W Then Parent.ChildMaxWidth = Self.Parent.W
+		Self.RealVisible = 1
+		ZOrder(Self.Parent)
+		Self.W = Parent.ChildMaxWidth
+		Self.SeperatedCanvas = 1
+		Self.GuiCanvas = New Gui_Canvas(Self)
+		Self.Minimised = 1
+		
+	End Method
+	
+	
+	Method Draw2()
+		Local AtlasX = 510
+		Local AtlasY = 20
+		
+		If Gui.Over = Self Or Self.Minimised = 0 Then AtlasY = 50
+		If Gui.Down = Self Then AtlasY = 80
+		If Self.RealActive = 0 Then AtlasY = 110
+		
+		'Box
+		Gui.Draw3x3(RealX, RealY, W, H, AtlasX + 3, AtlasY + 3, 24, 24, 5)
+
+		'Text
+		SetFont(NormalFont)
+		Local TextY = RealY + ( (H - TextHeight(Text)) / 2.0)
+		Local TextX = RealX + 2
+		TextX = TextX + (H / 2) + 5
+		'If Self.MenuTick Then TextX = TextX + (H / 2) + 5
+		Local OldAlpha:Float = GetAlpha()
+		If Self.RealActive = 0 Then SetAlpha(GetAlpha() -0.6)
+		
+		'Icon
+		If Icon <> Null Then
+			Local HH:Float = (H / 1.65)
+			DrawImageRect(Icon, RealX + 2, RealY + ( (H - HH) / 2), IconX, IconY, IconW, IconH, 0, (HH * 1.0) / IconW, (HH * 1.0) / IconH)
+		End If
+		
+		
+		'Text
+		If RealActive = 1 Then
+			If Gui.Over = Self Or Gui.Down = Self Or Self.Minimised = 0 Then
+				SetFont(NormalFontInv)
+				DrawText(Text, TextX, TextY)
+			Else
+				SetFont(NormalFont)
+				DrawText(Text, TextX, TextY)
+			End If
+		Else
+			SetFont(NormalFont)
+			DrawText(Text, TextX, TextY)
+		End If
+		
+		'Tick
+		If Self.MenuTick = 1 Then
+			Local HH = (H / 2)
+			If Value = 0 Then
+				DrawImageRect(Gui.Atlas, RealX + 4, RealY + ( (H - HH) / 2), AtlasX + 30, AtlasY + 10, 10, 10, 0, HH / 10.0, HH / 10.0)
+			Else
+				DrawImageRect(Gui.Atlas, RealX + 4, RealY + ( (H - HH) / 2), AtlasX + 30, AtlasY + 20, 10, 10, 0, HH / 10.0, HH / 10.0)
+			End If
+		End If
+		
+		'Child Arrow
+		If Self.Children.Count > 0 Then
+			Local HH = (H / 3)
+			DrawImageRect(Gui.Atlas, RealX + W - (H / 3) - 3, RealY + ( (H - (H / 3)) / 2), AtlasX + 30, AtlasY, 10, 10, 0, (H / 3) / 10.0, (H / 3) / 10.0)
+		End If
+		
+		
+		
+		SetAlpha(OldAlpha)
+		
+		
+	End Method
+
+	Method Update2()
+		'Update width
+			SetFont(NormalFont)
+			Local WW = TextWidth(Text) + 10 + (H / 2) + 5
+			If Self.Children.Count > 0 Then WW = TextWidth(Text) + 7 + (H / 3)+(H / 2) + 4
+			
+			If W < WW Then
+				W = WW
+				Parent.ChildMaxWidth = WW
+			End If
+
+		
+		
+		
+		
+		'Canvas Update
+		If Self.Children.Count > 0 Then
+			If Self.RealVisible = 0 Then GuiCanvas.Visible = 0
+			GuiCanvas.CanvasX = RealX + W
+			GuiCanvas.CanvasY = RealY
+			GuiCanvas.CanvasW = ChildMaxWidth
+			GuiCanvas.CanvasH = ChildMaxHeight * Children.Count
+			
+			'Within Screen
+			If GuiCanvas.CanvasX + GuiCanvas.CanvasW > DeviceWidth() Then GuiCanvas.CanvasX = DeviceWidth() -GuiCanvas.CanvasW
+			If GuiCanvas.CanvasY + GuiCanvas.CanvasH > DeviceHeight() Then GuiCanvas.CanvasY = DeviceHeight() -GuiCanvas.CanvasH
+			
+			If GuiCanvas.CanvasX < 0 Then GuiCanvas.CanvasX = 0
+			If GuiCanvas.CanvasY < 0 Then GuiCanvas.CanvasY = 0
+		End If
+		
+		If Gui.Over = Self And Self.RealActive Then
+				If Parent.OpenMenu <> Null Then
+					Parent.OpenMenu.Minimised = 1
+					Parent.OpenMenu.GuiCanvas.Visible = 0
+					Gui_Menu.CloseMenu2(Parent.OpenMenu)
+				End If
+				
+				If Self.Children.Count > 0 Then
+					Parent.OpenMenu = Self
+					Self.Minimised = 0
+					Self.GuiCanvas.Visible = 1
+				End If
+		End If
+		
+		If Gui.Clicked = Self Then
+			If Self.MenuTick = 1 Then
+				If Self.Value < 1 Then
+					Self.Value = 1
+				Else
+					Self.Value = 0
+				End If
+			Else
+				
+				Gui_Menu.CloseMenu(Self)
+				
+				
+			End If
+		End If
+		
+	End Method
+	
+End Class
+

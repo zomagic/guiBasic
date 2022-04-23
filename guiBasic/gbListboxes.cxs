@@ -1,0 +1,172 @@
+Import guiBasic
+
+Class Gui_Listbox Extends Gui
+
+	Method New(X, Y, W, H, Parent:Gui)
+		Self.Type = "Listbox"
+		Self.X = X
+		Self.Y = Y
+		Self.W = W
+		Self.H = H
+		Self.Parent = Parent
+		Self.Parent.Children.AddLast(Self)
+		Self.Children = New List<Gui>
+		Self.ListboxScrollbar = Gui.CreateVScrollbar(W - 18, 0, 17, H - 2, 0, 10, Self, 0)
+		Self.ListboxScrollbar.Visible = 0
+		ZOrder(Self.Parent)
+	End Method
+	
+	
+	Method Draw2()
+		
+		Local AtlasX = 440
+		Local AtlasY = 20
+		If Self.RealActive = 0 Then AtlasY = 110
+		
+		'Box
+		Gui.Draw3x3(RealX, RealY, W, H, AtlasX, AtlasY, 30, 30, 10)
+	
+	
+	End Method
+
+	
+	
+	Method Update2()
+		'UpdateCanvas
+		CanvasX = RealX + 1
+		CanvasY = RealY + 1
+		CanvasW = W - 2
+		CanvasH = H - 2
+		VisibleChildNumber = 0
+		
+		If Self.IsClicked Then
+			For Local i:Gui = EachIn Children
+				If i.Type = "ListboxItem" And i.Visible = 1 And i.Active = 1 Then
+					OnFocus = i
+					Exit
+				EndIf
+			Next
+		EndIf
+		
+		
+		For Local i:Gui = EachIn Children
+			If i.RealVisible Then VisibleChildNumber=VisibleChildNumber+1
+		Next
+		
+		'Update Scrollbar
+		Self.ListboxScrollbar.X = W - 18
+		Self.ListboxScrollbar.Y = 0
+		Self.ListboxScrollbar.W = 17
+		Self.ListboxScrollbar.H = H - 2
+		SetFont(NormalFont)
+		If (VisibleChildNumber * (TextHeight("Testing123") + 4)) > H Then
+			Self.ListboxScrollbar.Visible = 1
+			Self.ListboxScrollbar.Minimum = 0
+			Self.ListboxScrollbar.Maximum = ( (VisibleChildNumber - 1) * (TextHeight("Testing123") + 4)) - H
+		Else
+			Self.ListboxScrollbar.Value = 0
+			Self.ListboxScrollbar.Visible = 0
+		EndIf
+		
+		
+		ListboxCounter = 0
+	End Method
+	
+End Class
+
+
+
+
+Class Gui_ListboxItem Extends Gui
+
+	Method New(Text:String, Parent:Gui, Value = 0, FLOPS = 0)
+		Self.Type = "ListboxItem"
+		Self.Text = Text
+		Self.Value = Value
+		Self.Parent = Parent
+		Self.Parent.Children.AddLast(Self)
+		Self.Children = New List<Gui>
+		SetFont(NormalFont)
+		Self.H = TextHeight("Test123") + 4
+		Self.W = Parent.W - 2
+		If FLOPS = 0 Then ZOrder(Self.Parent)
+		
+	End Method
+	
+	
+	Method Draw2()
+		Local AtlasX = 440
+		Local AtlasY = 20
+		
+		If Gui.Over = Self Then AtlasY = 50
+		If Gui.Down = Self Then AtlasY = 80
+		If Parent.Selected <> Null And Parent.Selected = Self Then AtlasY = 80
+		If Self.RealActive = 0 Then AtlasY = 110
+		If Self.RealActive = 0 And Parent.Selected <> Null And Parent.Selected = Self Then AtlasY = 110
+		
+		SetScissorWithinSelf(0, 0, W, H)
+		'Box
+		Gui.Draw3x3(RealX, RealY, W, H, AtlasX + 3, AtlasY + 3, 24, 24, 5)
+		
+		'FileOps Images
+		If PartOfFileOperations = 1 Then
+			If Value = 1 Then DrawImageRect(FileOps, RealX + 3, RealY + 2, 0, 0, 20, 20, 0, (H - 4) / 20.0, (H - 4) / 20.0)
+			If Value = 0 Then DrawImageRect(FileOps, RealX + 2, RealY + 2, 20, 0, 20, 20, 0, (H - 4) / 20.0, (H - 4) / 20.0)
+		End If
+		
+		'Text
+		SetFont(NormalFont)
+		Local TextY = RealY + ( (H - TextHeight(Text)) / 2.0)
+		
+		Local TextX = RealX + 2
+		If PartOfFileOperations = 1 Then TextX = TextX + H
+		
+		Local OldAlpha:Float = GetAlpha()
+		If Self.RealActive = 0 And Parent.Selected <> Self Then SetAlpha(GetAlpha() -0.6)
+		
+		If RealActive = 1 Then
+			If Gui.Over = Self Or Gui.Down = Self Then
+				SetFont(NormalFontInv)
+				DrawText(Text, TextX, TextY)
+			ElseIf Parent.Selected <> Null And Parent.Selected = Self Then
+				SetFont(NormalFontInv)
+				DrawText(Text, TextX, TextY)
+			Else
+				SetFont(NormalFont)
+				DrawText(Text, TextX, TextY)
+			End If
+		Else
+			SetFont(NormalFont)
+			DrawText(Text, TextX, TextY)
+		End If
+		SetAlpha(OldAlpha)
+		
+		
+		
+	End Method
+
+	Method Update2()
+		'Update XYWH
+		Self.X = 0
+		Self.W = Parent.W - 2
+		SetFont(NormalFont)
+		Self.H = TextHeight("Testing123") + 4
+		Self.Y = Self.H * Parent.ListboxCounter - Parent.ListboxScrollbar.Value
+		If Self.Visible Then Parent.ListboxCounter = Parent.ListboxCounter + 1
+			
+		If Gui.Clicked = Self Then
+			Parent.Text = Text
+			Parent.Value = Value
+			If Parent.Selected <> Null Then Parent.Selected.IsSelected = 0
+			Parent.Selected = Self
+			Self.IsSelected = 1
+
+		EndIf
+		
+	
+		
+		
+	End Method
+	
+End Class
+

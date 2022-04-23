@@ -1,0 +1,158 @@
+Import guiBasic
+
+Class Gui_Slider Extends Gui
+	
+	Method New(X, Y, W, H, Minimum, Maximum, Parent:Gui, Value:Float = 0, Stp = 0)
+		Self.Type = "Slider"
+		Self.X = X
+		Self.Y = Y
+		Self.W = W
+		Self.H = H
+		Self.Stp = Stp
+		Self.Minimum = Minimum
+		Self.Maximum = Maximum
+		Self.FloatValue = Value
+		Self.Value = Int(Value)
+		Self.Parent = Parent
+		Self.Parent.Children.AddLast(Self)
+		Self.Children = New List<Gui>
+		ZOrder(Self.Parent)
+		
+		Self.SliderButton = New Gui_SliderButton(Self)
+		Self.SliderButton.W = H
+		Self.SliderButton.H = H
+	End Method
+	
+	
+	Method Draw2()
+		Local AtlasX = 600
+		Local AtlasY = 215
+	
+		If Self.RealActive = 0 Then AtlasY = 245
+		Local HH = (H / 2)
+		Local YY = RealY + (H / 4)
+		
+		'Left Edge
+		DrawImageRect(Gui.Atlas, RealX, YY, AtlasX, AtlasY, 15, 15, 0, HH / 15.0, HH / 15.0)
+		
+		'Left to Value
+		Local MW:Float = W * ( (FloatValue - Minimum) / (Maximum - Minimum - 0.0))
+		If MW < HH Then MW = HH
+		If MW > W-HH Then MW=W-HH
+		DrawImageRect(Gui.Atlas, RealX + HH, YY, AtlasX + 15, AtlasY, 100, 15, 0, (MW - HH) / 100.0, HH / 15.0)
+	
+		If RealActive = 0 Then AtlasY = AtlasY - 15
+		'Value to Right
+		DrawImageRect(Gui.Atlas, RealX + MW, YY, AtlasX + 15, AtlasY + 15, 100, 15, 0, (W - MW - HH) / 100.0, HH / 15.0)
+		'Right Edge
+		DrawImageRect(Gui.Atlas, RealX + W - HH, YY, AtlasX + 115, AtlasY + 15, 15, 15, 0, HH / 15.0, HH / 15.0)
+	
+	End Method
+	
+	
+	Method Update2()
+		'If User Change
+		If Int(FloatValue) <> Value Then FloatValue = Value
+		
+		'Change For Step Values
+		If Stp > 0 Then
+			Local Flt:Float = (FloatValue * 1.0) / Stp
+			Local Intt = Int(FloatValue) / Stp
+			Local Remainder:Float = Flt - Intt
+			FloatValue = (Int( (FloatValue * 1.0) / Stp)) * Stp
+			If Remainder > 0.5 Then FloatValue = FloatValue + Stp
+		End If
+		
+		'Slider X Position
+		Local PX:Float = (W - H) * ( (FloatValue - Minimum) / (Maximum - Minimum - 0.0))
+		Self.SliderButton.X = PX
+		Self.SliderButton.Y = 0
+		Self.SliderButton.W = H
+		Self.SliderButton.H = H
+		
+		'Keep Within Min and Max
+		If FloatValue > Maximum Then FloatValue = Maximum
+		If FloatValue < Minimum Then FloatValue = Minimum
+		
+		'BGBarDown
+		If Gui.Down = Self Then
+			FloatValue = ( ( ( (TouchX() -RealX - (SliderButton.H / 2))) / (W - SliderButton.H)) * (Maximum - Minimum)) + Minimum
+
+			'Change For Step Values
+			If Stp > 0 Then
+				Local Flt:Float = (FloatValue * 1.0) / Stp
+				Local Intt = Int(FloatValue) / Stp
+				Local Remainder:Float = Flt - Intt
+				FloatValue = (Int( (FloatValue * 1.0) / Stp)) * Stp
+				If Remainder > 0.5 Then FloatValue = FloatValue + Stp
+			End If
+			
+			
+			If FloatValue > Maximum Then FloatValue = Maximum
+			If FloatValue < Minimum Then FloatValue = Minimum
+			Value = Int(FloatValue)
+			Gui.Down = Null
+		End If
+		
+		Self.Value = Int(Self.FloatValue)
+		
+	End Method
+	
+End Class
+
+
+Class Gui_SliderButton Extends Gui
+	
+	Method New(Parent:Gui)
+		Self.Type = "SliderButton"
+		Self.Parent = Parent
+		Self.Parent.Children.AddLast(Self)
+		Self.Children = New List<Gui>
+	End Method
+	
+	
+	Method Draw2()
+		Local AtlasX = 605
+		Local AtlasY = 180
+		If Gui.Over = Self Then AtlasX = 635
+		If Gui.Down = Self Then AtlasX = 665
+		If Self.RealActive = 0 Then AtlasX = 695
+		
+		DrawImageRect(Gui.Atlas, RealX, RealY, AtlasX, AtlasY, 30, 30, 0, H / 30.0, H / 30.0)
+	End Method
+	
+	
+	Method Update2()
+		If Gui.Down = Self And Moving = 0 Then
+			Moving = 1
+			MovingY = TouchY() -RealY
+			MovingX = TouchX() -RealX
+		End If
+		
+		If TouchDown = 0 Then Moving = 0
+		
+		If Moving = 1 Then
+			
+			Parent.FloatValue = ( ( ( (TouchX() -Parent.RealX - (MovingX))) / (Parent.W - W)) * (Parent.Maximum - Parent.Minimum)) + Parent.Minimum
+
+			'Change For Step Values
+			If Parent.Stp > 0 Then
+				Local Flt:Float = (Parent.FloatValue * 1.0) / Parent.Stp
+				Local Intt = Int(Parent.FloatValue) / Parent.Stp
+				Local Remainder:Float = Flt - Intt
+				Parent.FloatValue = (Int( (Parent.FloatValue * 1.0) / Parent.Stp)) * Parent.Stp
+				If Remainder > 0.5 Then Parent.FloatValue = Parent.FloatValue + Parent.Stp
+			End If
+			
+			
+			If Parent.FloatValue > Parent.Maximum Then Parent.FloatValue = Parent.Maximum
+			If Parent.FloatValue < Parent.Minimum Then Parent.FloatValue = Parent.Minimum
+			Parent.Value = Int(Parent.FloatValue)
+			
+
+		End If
+			
+	End Method
+	
+	
+End Class

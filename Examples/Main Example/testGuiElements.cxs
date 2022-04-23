@@ -1,0 +1,571 @@
+Import main___test_guiBasic
+
+Global Transition
+
+'-- Main Screen Globals
+'#Region "Main Screen Globals"
+Global MainScreen:Gui
+	Global W_Canvas:Gui
+	Global W_Main:Gui
+		Global R_Style1:Gui
+		Global R_Style2:Gui
+		Global R_Style3:Gui
+		Global R_Style4:Gui
+		Global R_Transition1:Gui
+		Global R_Transition2:Gui
+		Global R_Transition3:Gui
+		Global R_Transition4:Gui
+		Global T_Shadows:Gui
+	Global B_Elements:Gui
+	Global B_Windows:Gui
+	Global B_Text:Gui
+	Global B_Canvas:Gui
+	Global B_MsgBox:Gui
+	Global B_Chart:Gui
+	Global B_Game:Gui
+	
+	Global Test:Gui
+'#EndRegion 
+
+
+'-- Element Screen Globals
+'#Region "Element Screen Globals"
+Global ElementScreen:Gui
+	Global B_ElementHome:Gui
+	Global EWindow:Gui
+
+
+
+'#EndRegion 
+
+'-- Window Screen Globals
+'#Region "Window Screen Globals"
+Global WindowScreen:Gui
+	Global Window1:Gui
+	Global Window2:Gui
+	Global Window3:Gui
+	Global Window4:Gui
+	Global Window5:Gui
+	Global Window6:Gui
+	Global WindowHome:Gui
+	Global WindowReveal:Gui
+
+'#EndRegion 
+
+
+'-- Text Screen Globals
+'#Region "Text Screen Globals"
+Global TextScreen:Gui
+	Global Text1:Gui
+	Global Text2:Gui
+	Global Text3:Gui
+	Global Text4:Gui
+	Global Text5:Gui
+	Global Text6:Gui
+	Global TextHome:Gui
+	Global Table:Gui
+	
+'#EndRegion 
+
+'-- Chart Screen Globals
+'#Region "Text Screen Globals"
+Global ChartScreen:Gui
+	Global Chart:Gui
+	Global Chart2:Gui
+	Global ChartTable:Gui
+	Global Update:Gui
+	Global ChartBack:Gui
+	Global ChartRadio0:Gui
+	Global ChartRadio1:Gui
+	Global ChartRadio2:Gui
+	Global ChartRadio3:Gui
+	
+	
+'#EndRegion 
+
+Function SetupTestElements()
+	SetupMainScreen()
+	SetupElementScreen()
+	SetupWindowsScreen()
+	SetupTextScreen()
+	SetupChartScreen()
+End Function
+
+Function UpdateTestElements()
+	UpdateMainScreen()
+	UpdateElementScreen()
+	UpdateWindowScreen()
+	UpdateTextScreen()
+	UpdateChartScreen()
+End Function
+
+
+
+Function SetupMainScreen()
+	MainScreen = Gui.CreateScreen()
+	MainScreen.Canvas = New MainBG
+	
+	W_Canvas = Gui.CreateWindow(20, 20, 200, 200, "Custom Canvas", MainScreen, 1, 1, 1, 1, 1, 1)
+	W_Canvas.Canvas = New ExampleCanvas
+	W_Canvas.Visible = 0
+	W_Main = Gui.CreateWindow(800-230, 30, 200, 330, "Options", MainScreen, 1, 0, 1, 1, 0, 0, 1)
+		Gui.CreateLabel(5, 5, "Select Gui Theme", W_Main)
+		R_Style1 = Gui.CreateRadio(15, 30, 17, "Criterion", W_Main, 1, 1)
+		R_Style2 = Gui.CreateRadio(100, 30, 17, "Fantasy", W_Main, 1, 0)
+		R_Style3 = Gui.CreateRadio(15, 55, 17, "Windows", W_Main, 1, 0)
+		R_Style4 = Gui.CreateRadio(100, 55, 17, "Futuristic", W_Main, 1, 0)
+		Gui.CreateLabel(5, 95, "Select Screen Transition", W_Main)
+		R_Transition1 = Gui.CreateRadio(15, 120, 17, "Fade", W_Main, 2, 1)
+		R_Transition2 = Gui.CreateRadio(100, 120, 17, "Slide", W_Main, 2, 0)
+		R_Transition3 = Gui.CreateRadio(15, 145, 17, "Turn", W_Main, 2, 0)
+		R_Transition4 = Gui.CreateRadio(100, 145, 17, "Zoom", W_Main, 2, 0)
+		Gui.CreateLabel(5, 185, "Gui Setting", W_Main)
+		T_Shadows = Gui.CreateTickbox(15, 210, 17, "Shadows", W_Main, 1)
+			
+	B_Elements = Gui.CreateButton(10, 150, 160, 35, "Gui Elements", MainScreen)
+	B_Windows = Gui.CreateButton(180, 150, 160, 35, "Multiple Windows", MainScreen)
+	B_Text = Gui.CreateButton(10, 195, 160, 35, "Text Input", MainScreen)
+	B_Canvas = Gui.CreateButton(180, 195, 160, 35, "Custom Canvas", MainScreen)
+	B_MsgBox = Gui.CreateButton(10, 240, 160, 35, "MsgBox", MainScreen)
+	B_Chart = Gui.CreateButton(180, 240, 160, 35, "Example Charts", MainScreen, 0)
+	B_Game = Gui.CreateButton(10, 285, 160, 35, "Example Game", MainScreen, 1)
+End Function
+
+Function SetupElementScreen()
+	ElementScreen = Gui.CreateScreen()
+		B_ElementHome = Gui.CreateButton(800-150, 480-55, 120, 25, "Home Screen", ElementScreen, 1)
+		'-- Screen Menus
+		Local Menu1:Gui = Gui.CreateMenu("Menu 1", ElementScreen)
+			Local Menu1a:Gui = Gui.CreateMenuItem("Menu 1a", Menu1)
+			Local Menu1b:Gui = Gui.CreateMenuItem("Menu 1b", Menu1)
+			Local Menu1c:Gui = Gui.CreateMenuItem("Menu 1c", Menu1)
+				Local Menu1c1:Gui = Gui.CreateMenuItem("Menu 1c1", Menu1c)
+				Local Menu1c2:Gui = Gui.CreateMenuItem("Menu 1c2", Menu1c)
+				Local Menu1c3:Gui = Gui.CreateMenuItem("Menu 1c3", Menu1c)
+			Local Menu1d:Gui = Gui.CreateMenuItem("Inactive", Menu1)
+			Menu1d.Active = 0
+		Local Menu2:Gui = Gui.CreateMenu("Menu 2", ElementScreen)
+			Local Menu2a:Gui = Gui.CreateMenuItem("Menu 2a", Menu2, 1, 1)
+			Local Menu2b:Gui = Gui.CreateMenuItem("Menu 2b", Menu2, 1)
+			Local Menu2c:Gui = Gui.CreateMenuItem("Menu 2c", Menu2, 1)
+		Local Menu3:Gui = Gui.CreateMenu("Inactive", ElementScreen)
+		Menu3.Active = 0
+		
+		'-- Buttons
+		Gui.CreateButton(20, 20, 100, 25, "Button Style 0", ElementScreen)
+		Gui.CreateButton(130, 20, 100, 25, "Button Style 1", ElementScreen, 1)
+		Local B1:Gui = Gui.CreateButton(20, 55, 100, 25, "Inactive Style 0", ElementScreen); B1.Active = 0
+		Local B2:Gui = Gui.CreateButton(130, 55, 100, 25, "Inactive Style 1", ElementScreen, 1); B2.Active = 0
+		
+		'-- Tick
+		Gui.CreateTickbox(270, 25, 17, "Tickbox 1", ElementScreen, 1)
+		Local T1:Gui = Gui.CreateTickbox(270, 60, 17, "Inactive 1", ElementScreen, 1); T1.Active = 0
+		
+		'-- Radio
+		Gui.CreateRadio(400, 25, 17, "Radio 1a", ElementScreen, 0, 1)
+		Gui.CreateRadio(400, 45, 17, "Radio 1b", ElementScreen, 0, 0)
+		Gui.CreateRadio(400, 65, 17, "Radio 1c", ElementScreen, 0, 0)
+		Gui.CreateRadio(520, 25, 17, "Radio 2a", ElementScreen, 1, 0)
+		Gui.CreateRadio(520, 45, 17, "Radio 2b", ElementScreen, 1, 1)
+		Local R1:Gui = Gui.CreateRadio(520, 65, 17, "Inactive", ElementScreen, 1, 0); R1.Active = 0
+		
+		'-- Slide Buttons
+		Gui.CreateSlideButton(20, 110, 70, 25, "Yes", "No", ElementScreen, 1)
+		Local SB1:Gui = Gui.CreateSlideButton(100, 110, 90, 25, "Now", "Never", ElementScreen, 0); SB1.Active = 0
+		
+		'-- DropDown
+		Local DD1:Gui = Gui.CreateDropDown(20, 170, 170, 25, ElementScreen)
+			Gui.CreateDropDownItem("Item 1", DD1)
+			Gui.CreateDropDownItem("Item 2", DD1)
+			Gui.CreateDropDownItem("Item 3", DD1)
+			Local Ddi1:Gui = Gui.CreateDropDownItem("Inactive", DD1); Ddi1.Active = 0
+		Local DD2:Gui = Gui.CreateDropDown(20, 210, 170, 25, ElementScreen, "Inactive..."); DD2.Active = 0
+		
+		'-- Listbox
+		Local L1:Gui = Gui.CreateListbox(20, 250, 170, 100, ElementScreen)
+			Gui.CreateListboxItem("Item 1", L1)
+			Gui.CreateListboxItem("Item 2", L1)
+			Gui.CreateListboxItem("Item 3", L1)
+			Gui.CreateListboxItem("Item 4", L1)
+			Gui.CreateListboxItem("Item 5", L1)
+			Gui.CreateListboxItem("Item 6", L1)
+			Gui.CreateListboxItem("Item 7", L1)
+			Gui.CreateListboxItem("Item 8", L1)
+			Gui.CreateListboxItem("Item 9", L1)
+			Local LI1:Gui = Gui.CreateListboxItem("Inactive", L1);LI1.Active = 0
+		Local L2:Gui = Gui.CreateListbox(20, 360, 170, 80, ElementScreen)
+			Gui.CreateListboxItem("Item 1", L2)
+			Gui.CreateListboxItem("Item 2", L2)
+			Gui.CreateListboxItem("Item 3", L2)
+			Gui.CreateListboxItem("Item 4", L2)
+			Gui.CreateListboxItem("Item 5", L2)
+			Gui.CreateListboxItem("Item 6", L2)
+			Gui.CreateListboxItem("Item 7", L2)
+			Gui.CreateListboxItem("Item 8", L2)
+			Gui.CreateListboxItem("Item 9", L2)
+		L2.Active = 0
+		
+			'-- Sliders
+			Gui.CreateLabel(230, 110, "   Scrollbars   ~n& Sliders~n~nNo Step~nStepped~nInactive~n", ElementScreen, 1, 1)
+			Gui.CreateVScrollbar(335, 110, 16, 140, 0, 70, ElementScreen, 0, 0)
+			Gui.CreateVScrollbar(360, 110, 16, 140, 0, 80, ElementScreen, 50, 20)
+			Local S3:Gui = Gui.CreateVScrollbar(385, 110, 16, 140, 0, 70, ElementScreen, 10); S3.Active = 0
+			
+			Gui.CreateHScrollbar(230, 270, 170, 16, 0, 100, ElementScreen)
+			Gui.CreateHScrollbar(230, 295, 170, 16, 0, 100, ElementScreen, 50, 20)
+			Local S2:Gui = Gui.CreateHScrollbar(230, 320, 170, 16, 0, 100, ElementScreen, 10); S2.Active = 0
+			
+			Test = Gui.CreateSlider(230, 350, 170, 25, 0, 20, ElementScreen)
+			Gui.CreateSlider(230, 380, 170, 25, 0, 20, ElementScreen, 10, 5)
+			Local S1:Gui = Gui.CreateSlider(230, 410, 170, 25, 0, 20, ElementScreen, 5); S1.Active = 0
+			'-- Scrollbars
+			
+		'-- Window
+		EWindow = Gui.CreateWindow(425, 110, 195, 180, "", ElementScreen, 2, 0, 0, 0, 0, 0, 1)
+		Local Tab1:Gui = Gui.CreateTab("Tab1", EWindow)
+		Local Tab2:Gui = Gui.CreateTab("Tab2", EWindow)
+		Local Tab3:Gui = Gui.CreateTab("Tab3", EWindow)
+		
+		Gui.CreateLabel(10, 10, "Label (Justified)~nAlign=0", Tab1, 0, 0)
+		Gui.CreateLabel(10, 60, "Label (With Boarder)~nBoarder=1", Tab1, 0, 1)
+		Gui.CreateLabel(10, 10, "Label (Centered)~nAlign=1", Tab2, 1, 0)
+		Gui.CreateLabel(10, 60, "Label (With Boarder)~nBoarder=1", Tab2, 1, 1)
+		Gui.CreateLabel(10, 10, "Label (Right Align)~nAlign=2", Tab3, 2, 0)
+		Gui.CreateLabel(10, 60, "Label (With Boarder)~nBoarder=1", Tab3, 2, 1)
+		
+		Local TTLabel:Gui = Gui.CreateLabel(425, 325, "This Label has a tooltip.~nHover over it to see.", ElementScreen, 0, 1)
+		TTLabel.Tooltip = "This is an example tooltip~nTooltips can be MultiLine"
+End Function
+
+Function SetupWindowsScreen()
+	WindowScreen = Gui.CreateScreen()
+	WindowHome = Gui.CreateButton(800-150, 480-55, 120, 25, "Home Screen", WindowScreen, 1)
+	Window1 = Gui.CreateWindow(480, 0, 150, 150, "On Top", WindowScreen, 2, 0, 0, 0, 0, 1, 1)
+		'-- button inside window
+		WindowReveal = Gui.CreateButton(10, 10, 110, 25, "Open All", Window1, 0)
+	Window2 = Gui.CreateWindow(10, 10, 150, 150, "Behind", WindowScreen, 0, 0, 0, 0, 0, 1, 0)
+	Window3 = Gui.CreateWindow(100, 125, 200, 200, "Window 3", WindowScreen, 1, 1, 1, 1, 1, 1)
+		'-- window inside window
+		Window4 = Gui.CreateWindow(0, 0, 50, 50, "Window 3.1", Window3, 1, 1, 1, 1, 1, 1)
+		'-- window inside window
+		Window5 = Gui.CreateWindow(30, 30, 50, 50, "Window 3.2", Window3, 1, 1, 1, 1, 1, 1)
+	Window6 = Gui.CreateWindow(220, 230, 150, 150, "Window 4", WindowScreen, 1, 1, 1, 1, 1, 1)
+End Function
+
+Function SetupTextScreen()
+	TextScreen = Gui.CreateScreen()
+	TextHome = Gui.CreateButton(800-150, 480-55, 120, 25, "Home Screen", TextScreen, 1)
+	Text1 = Gui.CreateTextBox(20, 20, 200, 200, TextScreen, "TextBox~nAllowNumbers=1~nAllowLetters=1~nAllowSymbols=1~nWordwrap=0")
+	Text2 = Gui.CreateTextBox(20, 240, 200, 200, TextScreen, "TextBox~nAllowNumbers=1~nAllowLetters=1~nAllowSymbols=1~nWordwrap=1", 1, 1, 1, 1)
+	
+	Gui.CreateLabel(260, 20, "Letters Only:", TextScreen)
+	Gui.CreateTextField(370, 20, 150, 20, TextScreen, "Text Field", 0, 1, 0, 0)
+	
+	Gui.CreateLabel(260, 50, "Numbers Only:", TextScreen)
+	Gui.CreateTextField(370, 50, 150, 20, TextScreen, "12345", 1, 0, 0, 0)
+	
+	Gui.CreateLabel(260, 80, "Symbols Only:", TextScreen)
+	Gui.CreateTextField(370, 80, 150, 20, TextScreen, "!£$%^", 0, 0, 1, 0)
+	
+	Gui.CreateLabel(260, 110, "Max Length=10:", TextScreen)
+	Gui.CreateTextField(370, 110, 150, 20, TextScreen, "Abcd1234!£$%", 1, 1, 1, 10)
+	
+	Table = Gui.CreateTable(260, 150, 500, 250, TextScreen, 12, 4, 100, 25)
+	Table.TableAddHeader(0, 0, "Name")
+	Table.TableAddHeader(1, 0, "Age")
+	Table.TableAddHeader(2, 0, "Gender")
+	Table.TableAddHeader(3, 0, "Smoker")
+	For Local Counter = 1 To 11
+		Table.TableAddText(0, Counter, "")
+		Table.TableAddText(1, Counter, "", 1, 0, 0, 3)
+		Table.TableAddDropDown(2, Counter, "M/F")
+		Table.TableAddDropDownItem(2, Counter, "Male")
+		Table.TableAddDropDownItem(2, Counter, "Female")
+		Table.TableAddTick(3, Counter, 14, "", 0)
+	Next
+End Function
+
+Function SetupChartScreen()
+	ChartScreen = Gui.CreateScreen()
+	ChartBack = Gui.CreateButton(800-150, 480-55, 120, 25, "Home Screen", ChartScreen, 1)
+	Chart = Gui.CreateChart(10, 10, 300, 200, ChartScreen, 1, "Key1,Key2,Key3,Key4;10,2;5,5;10,10;5,4", "Chart With Labels and Key", "X Label Test", "Y Label Test", 1)
+	Chart2 = Gui.CreateChart(330, 10, 300, 200, ChartScreen, 2, "10,2;5,5;10,10;5,4", "Chart Plain")
+	ChartRadio0 = Gui.CreateRadio(50, 230, 17, "Bar Chart", ChartScreen, 1, 1)
+	ChartRadio1 = Gui.CreateRadio(170, 230, 17, "Line Chart", ChartScreen, 1, 0)
+	ChartRadio2 = Gui.CreateRadio(290, 230, 17, "Scatter Chart", ChartScreen, 1, 0)
+	ChartRadio3 = Gui.CreateRadio(410, 230, 17, "Pie Chart", ChartScreen, 1, 0)
+	ChartTable = Gui.CreateTable(20, 280, 400, 150, ChartScreen, 10, 4, 100, 20)
+	FillChartTable()
+		
+	
+End Function
+
+
+
+
+Function UpdateMainScreen()
+	'-- Main Settings Window
+	W_Main.StatusText = "FPS: " + FPS
+	'-- Style radios
+	If R_Style1.IsClicked Then
+		Gui.SetTheme(LoadImage("Atlas.png"))
+		Gui.SetFonts("titlefont.txt", "normalfont.txt", "normalfontinv.txt")
+		Gui.MinimiseButtonTurn = 1
+	Elseif R_Style2.IsClicked Then
+		Gui.SetTheme(LoadImage("fantasy.png"))
+		Gui.SetFonts("fantasytitle.txt", "fantasynormal.txt", "fantasynormalinv.txt")
+		
+	Elseif R_Style3.IsClicked Then
+		Gui.SetTheme(LoadImage("windows.png"))
+		Gui.SetFonts("tahomabold.txt", "tahoma.txt", "tahoma.txt")
+	Elseif R_Style4.IsClicked Then
+		Gui.SetTheme(LoadImage("futuristic.png"))
+		Gui.SetFonts("DigitalTitle.txt", "Digital1.txt", "Digital2.txt")
+	End If
+	
+	'-- Transition Radio
+	If R_Transition1.IsClicked Then Transition = 0
+	If R_Transition2.IsClicked Then Transition = 1
+	If R_Transition3.IsClicked Then Transition = 2
+	If R_Transition4.IsClicked Then Transition = 3
+	'-- TickBoxes
+	Gui.Shadows = T_Shadows.Value
+	'-- Example Buttons
+	If B_Elements.IsClicked Then TransitionToScreen(ElementScreen)
+	If B_MsgBox.IsClicked Then Gui.MsgBox("Mesage Box", "This is an example MsgBox.~nWith MultiLine Text.", 2, 1, "Example")
+	If Gui.CheckMsgBox("Example", 1) Then Gui.MsgBox("CheckMsgBox()", "Ok Button Clicked")
+	If Gui.CheckMsgBox("Example", 2) Then Gui.MsgBox("CheckMsgBox()", "Cancel Button Clicked")
+	
+	
+	If B_Windows.IsClicked Then TransitionToScreen(WindowScreen)
+	If B_Text.IsClicked Then TransitionToScreen(TextScreen)
+	If B_Canvas.IsClicked Then W_Canvas.Visible = 1
+	If B_Chart.IsClicked Then TransitionToScreen(ChartScreen)
+	If B_Game.IsClicked Then TransitionToScreen(GameScreen);LevelsWindow.Visible=0;Gui.SetCurrentWindow(GameWindow)
+	
+End Function
+
+Function UpdateElementScreen()
+	If B_ElementHome.IsClicked Then TransitionToScreen(MainScreen)
+	EWindow.StatusText = "FPS: " + FPS
+End Function
+
+Function UpdateWindowScreen()
+	If WindowHome.IsClicked Then TransitionToScreen(MainScreen)
+	If WindowReveal.IsClicked Then
+		Window1.Visible = 1
+		Window2.Visible = 1
+		Window3.Visible = 1
+		Window4.Visible = 1
+		Window5.Visible = 1
+		Window6.Visible = 1
+	End If
+	Window1.StatusText = "FPS: " + FPS
+End Function
+
+Function UpdateTextScreen()
+	If TextHome.IsClicked Then TransitionToScreen(MainScreen)
+End Function
+
+Function UpdateChartScreen()
+	If ChartBack.IsClicked Then TransitionToScreen(MainScreen)
+	
+	If ChartRadio0.Value = 1 Then Chart.ChartType = 0; Chart2.ChartType = 0
+	If ChartRadio1.Value = 1 Then Chart.ChartType = 1; Chart2.ChartType = 1
+	If ChartRadio2.Value = 1 Then Chart.ChartType = 2; Chart2.ChartType = 2
+	If ChartRadio3.Value = 1 Then Chart.ChartType = 3; Chart2.ChartType = 3
+	
+	SendChartData()
+End Function
+
+
+
+Function TransitionToScreen(Screen:Gui)
+	'-- Fade,slide,turn,zoom
+	If Transition = 0 Then Gui.FadeToScreen(Screen)
+	If Transition = 1 Then Gui.SlideToScreen(Screen)
+	If Transition = 2 Then Gui.TurnToScreen(Screen)
+	If Transition = 3 Then Gui.ZoomToScreen(Screen)
+End
+
+
+
+Class ExampleCanvas Extends guiBasic_Canvas
+	Method Draw()
+		SetColor(Rnd(0, 255), Rnd(0, 255), Rnd(0, 255))
+		DrawRect(Rnd(X, X + W), Rnd(Y, Y + H), Rnd(0, W), Rnd(0, H))
+		SetColor(255, 255, 255)
+		DrawText("X:" + X + " Y:" + Y + " W:" + W + " H:" + H, X+10, Y+10)
+		
+	End Method
+	
+	Method Update()
+		
+	End Method
+End
+
+Class MainBG Extends guiBasic_Canvas
+	Method Draw()
+		DrawImage(BgImage, X, Y)
+	End
+	
+	Method Update()
+		
+	End
+End
+
+
+
+Function FillChartTable()
+	ChartTable.TableAddHeader(0, 0, "Height")
+	ChartTable.TableAddHeader(1, 0, "Age")
+	ChartTable.TableAddHeader(2, 0, "Location")
+	ChartTable.TableAddHeader(3, 0, "Smoker")
+	
+	'-- Height
+	For Local y = 1 To 9
+		ChartTable.TableAddText(0, y, String(Int(Rnd(10, 40))), 1, 0, 0, 2)
+	Next
+	
+	'-- Ages
+	For Local y = 1 To 9
+		ChartTable.TableAddText(1, y, String(Int(Rnd(10, 40))), 1, 0, 0, 2)
+	Next
+	
+	'-- Location
+	For Local y = 1 To 9
+		Local L = Int(Rnd(0, 3))
+		Local Str:String
+		If L = 0 Then Str = "England"
+		If L = 1 Then Str = "Scotland"
+		If L = 2 Then Str = "Wales"
+		
+		ChartTable.TableAddDropDown(2, y, Str)
+		ChartTable.TableAddDropDownItem(2, y, "England")
+		ChartTable.TableAddDropDownItem(2, y, "Scotland")
+		ChartTable.TableAddDropDownItem(2, y, "Wales")
+	Next
+	
+	'-- Smoker
+	For Local y = 1 To 9
+		ChartTable.TableAddTick(3, y, 12, "", Int(Rnd(0, 2)))
+
+	Next
+	
+	
+End Function
+
+
+
+Function SendChartData()
+	Local NonSmokersInEngland
+	Local SmokersInEngland
+	Local NonSmokersInScotland
+	Local SmokersInScotland
+	Local NonSmokersInWales
+	Local SmokersInWales
+	Local Scottish
+	Local English
+	Local Welsh
+	
+	
+	For Local y = 1 To 9
+		'Smokers by counrty
+		If ChartTable.TableGetText(2, y) = "England" And ChartTable.TableGetValue(3, y) = 0 Then NonSmokersInEngland = NonSmokersInEngland + 1
+		If ChartTable.TableGetText(2, y) = "England" And ChartTable.TableGetValue(3, y) = 1 Then SmokersInEngland = SmokersInEngland + 1
+		If ChartTable.TableGetText(2, y) = "Scotland" And ChartTable.TableGetValue(3, y) = 0 Then NonSmokersInScotland = NonSmokersInScotland + 1
+		If ChartTable.TableGetText(2, y) = "Scotland" And ChartTable.TableGetValue(3, y) = 1 Then SmokersInScotland = SmokersInScotland + 1
+		If ChartTable.TableGetText(2, y) = "Wales" And ChartTable.TableGetValue(3, y) = 0 Then NonSmokersInWales = NonSmokersInWales + 1
+		If ChartTable.TableGetText(2, y) = "Wales" And ChartTable.TableGetValue(3, y) = 1 Then SmokersInWales = SmokersInWales + 1
+	
+		If ChartTable.TableGetText(2, y) = "England" Then English = English + 1
+		If ChartTable.TableGetText(2, y) = "Scotland" Then Scottish = Scottish + 1
+		If ChartTable.TableGetText(2, y) = "Wales" Then Welsh = Welsh + 1
+	Next
+	
+	
+	'-- Bar
+	If ChartRadio0.Value = 1 Then
+		Local StringToSend:String
+		
+		Chart.ChartData = "Non Smokers,Smokers;"
+		Chart.ChartData = Chart.ChartData + NonSmokersInEngland + "," + SmokersInEngland + ";"
+		Chart.ChartData = Chart.ChartData + NonSmokersInScotland + "," + SmokersInScotland + ";"
+		Chart.ChartData = Chart.ChartData + NonSmokersInWales + "," + SmokersInWales
+		Chart.ContainsKey = 1
+		Chart.XLabel = "England                         Scotland                         Wales"
+		Chart.YLabel = ""
+		
+		Chart2.ChartData = NonSmokersInEngland + "," + SmokersInEngland + ";"
+		Chart2.ChartData = Chart2.ChartData + NonSmokersInScotland + "," + SmokersInScotland + ";"
+		Chart2.ChartData = Chart2.ChartData + NonSmokersInWales + "," + SmokersInWales
+		Chart2.ContainsKey = 0
+		Chart2.XLabel = ""
+		Chart2.YLabel = ""
+		
+	End If
+	
+	'-- Line
+	If ChartRadio1.Value = 1 Or ChartRadio2.Value = 1 Then
+		Chart.ChartData = "England,Scotland,Wales;"
+		Chart2.ChartData = ""
+
+		
+		For Local y = 1 To 9
+			'Smokers by counrty
+			If ChartTable.TableGetText(2, y) = "England" Then
+				 Chart.ChartData = Chart.ChartData + Int(ChartTable.TableGetText(0, y)) + "," + Int(ChartTable.TableGetText(1, y)) + ","
+				 Chart2.ChartData = Chart2.ChartData + Int(ChartTable.TableGetText(0, y)) + "," + Int(ChartTable.TableGetText(1, y)) + ","
+
+			End If
+		Next
+		Chart.ChartData = Chart.ChartData + ";"
+		Chart2.ChartData = Chart2.ChartData + ";"
+		For Local y = 1 To 9
+			'Smokers by counrty
+			If ChartTable.TableGetText(2, y) = "Scotland" Then
+				 Chart.ChartData = Chart.ChartData + Int(ChartTable.TableGetText(0, y)) + "," + Int(ChartTable.TableGetText(1, y)) + ","
+				 Chart2.ChartData = Chart2.ChartData + Int(ChartTable.TableGetText(0, y)) + "," + Int(ChartTable.TableGetText(1, y)) + ","
+			
+			End If
+		Next
+		Chart.ChartData = Chart.ChartData + ";"
+		Chart2.ChartData = Chart2.ChartData + ";"
+		For Local y = 1 To 9
+			'Smokers by counrty
+			If ChartTable.TableGetText(2, y) = "Wales" Then
+				 Chart.ChartData = Chart.ChartData + Int(ChartTable.TableGetText(0, y)) + "," + Int(ChartTable.TableGetText(1, y)) + ","
+				 Chart2.ChartData = Chart2.ChartData + Int(ChartTable.TableGetText(0, y)) + "," + Int(ChartTable.TableGetText(1, y)) + ","
+			
+			End If
+		Next
+		
+		Chart.ContainsKey = 1
+		Chart.XLabel = "Height"
+		Chart.YLabel = "Age"
+		Chart2.ContainsKey = 0
+		Chart2.XLabel = ""
+		Chart2.YLabel = ""
+		
+	End If
+	
+	
+	'-- Pie
+	If ChartRadio3.Value = 1 Then
+		Chart.ChartData = "England,Scotland,Wales;"
+		Chart2.ChartData = ""
+		
+		Chart.ChartData = Chart.ChartData + English + ";" + Scottish + ";" + Welsh
+		Chart2.ChartData = Chart2.ChartData + English + ";" + Scottish + ";" + Welsh
+		
+		Chart.ContainsKey = 1
+		Chart.XLabel = ""
+		Chart.YLabel = ""
+		Chart2.ContainsKey = 0
+		Chart2.XLabel = ""
+		Chart2.YLabel = ""
+		
+	End If
+	
+End Function
+

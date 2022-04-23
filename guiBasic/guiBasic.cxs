@@ -1,0 +1,2471 @@
+Import mojo
+Import gbScreens
+Import gbWindows
+Import gbButtons
+Import gbDropdown
+Import gbSeperatedcanvas
+Import gbScrollbars
+Import gbSliders
+Import gbMenus
+Import gbListboxes
+Import gbTabs
+Import gbLabels
+Import gbMsgbox
+Import gbScreentransitions
+Import gbTextboxes
+Import gbCanvas
+Import gbTables
+Import gbCharts
+
+'Import Default Images to file
+Import "data/Atlas.png"
+Import "data/normalfont.txt"
+Import "data/normalfont_0.png"
+Import "data/titlefont.txt"
+Import "data/titlefont_0.png"
+Import "data/normalfontinv.txt"
+Import "data/normalfontinv_0.png"
+Import "data/chartfont.txt"
+Import "data/chartfont_0.png"
+Import "data/fileops.png"
+
+	
+'**************************************************
+' MG 26/09/2014 - Fantom engine integration
+'Import fantomEngine
+'**************************************************
+
+Class Gui
+	'Gui Globals
+	Global FeScaleX:Float = 1
+	Global FeScaleY:Float = 1
+	Global GuiLoaded = 0
+	Global ErrorLog:String
+	Global CurrentScreen:Gui
+	Global OldCurrentWindow:Gui
+	Global Atlas:Image
+	Global NormalFont:Font
+	Global NormalFontInv:Font
+	Global TitleFont:Font
+	Global TitleBarHeight
+	Global MouseMoving, OldMouseX, OldMouseY, TooltipOverTime
+	Global ShowTooltips = 1
+	Global CurrentWindow:Gui
+	Global Animated = -1, AnimatedSpeed:Float = 0, MinimiseButtonTurn = 1
+	Global Shadows = 1, ShadowOffset = 6
+	Global StyleChanged
+	Global OnFocus:Gui, OnFocusMenu:Gui, OldOnFocus:Gui
+	
+	Field GuiCanvas:Gui_Canvas
+	'MsgBox
+	Global GuiMessageBox:Gui_MsgBox, GuiMessageBoxReturned, GuiMessageBoxReturnedButton, GuiMessageBoxReturnedId:String
+	Field MsgBoxId:String
+	
+	'FileOperations
+	Global FileOperations:Gui
+		Global FileOperationMode:String
+		Field File_Window:Gui
+		Field File_OkButton:Gui
+		Field File_CancelButton:Gui
+		Field File_TextBox:Gui
+		Field File_CurrentPath:String
+		Field File_Extension:String
+		Field File_Listbox:Gui
+		Field PartOfFileOperations = 0
+		Field File_Label:Gui
+		Field File_LevelUp:Gui
+		Field File_Id:String
+		Field File_Returned:String
+		Global FileOps:Image
+		
+	'Textbox
+	Global ActiveTextbox:Gui, CursorLocation, CursorOn = 1, CurserTimer, KeyIsdown, KeydownTimer, CursorLine, CursorX
+	Field AllowNumbers, AllowLetters, AllowSymbols, MaxLength, TextLines:String[], WrapOffset
+	Field Wordwrapped, VScroll:Gui, HScroll:Gui, TextActive
+	'TextField
+	Field TextFieldOffset
+	
+	'Tables
+	Field Rows, Colomns, CellWidth, CellHeight, CellXCounter, CellYCounter, IsCell, IsHeader, DrawGrid
+	
+	
+	
+	'Individual Element Data
+	'----------------------------------------------------------------------------
+	'MDG: Added so that we can easily get a text value out of the control
+	Field TextValue:String
+	'----------------------------------------------------------------------------	
+	Field Type:String, Text:String
+	Field Value, FloatValue:Float
+	#if TARGET="html5"
+		Field X:Int, Y:Int, W, H
+	#else
+		Field X:Float, Y:Float, W, H
+	#endif
+	Field Style = 0, Active = 1, Visible = 1
+	Field CanvasX, CanvasY, CanvasW, CanvasH, SeperatedCanvas
+	Field RealX, RealY, RealActive, RealVisible, DrawingX, DrawingY, DrawingW, DrawingH
+	Field Minimised = 0, Minimising:Float = 0, Maximised, Maximising, MaximisingW, MaximisingH, MaximisingX, MaximisingY
+	Field Tooltip:String
+	Field DrawnCanvasBg
+	Field Parent:Gui, Children:List<Gui>
+	Field ChildMaxWidth, ChildMaxHeight, VisibleChildNumber
+	'ImgButton Stuff
+	Field ButtonImg:Image, ButtonImgX, ButtonImgY, ButtonImgW, ButtonImgH
+	'Window Stuff
+	Field Minimisable, Maximisable, Closeable, Sizeable, Moveable, Statusbar, StatusText:String, Order    '0=Behind  1=Variable  2 = Infront
+	Field MinimiseButton:Gui, CloseButton:Gui, ResizeButton:Gui, MaximiseButton:Gui
+	Field MovingX, MovingY, Moving, ResizingX, ResizingY, Resizing, ResizeReset, IsResizeButton, ResizingW, ResizingH, Closing, ClosingAlpha:Float
+	Field Icon:Image, IconX, IconY, IconW, IconH
+	Field IsMinimiseButton = 0, HasTabs
+	Field Canvas:guiBasic_Canvas
+	Field IsFlops = 0 'filemanagment system element
+	
+
+	Field Image:Image[4]	'0=Normal  1=Over  2=Down  3=Inactive  4=Mask
+	'Radio
+	Field RadioGroup
+	'Scrollbars
+	Field MinusButton:Gui, PlusButton:Gui, SliderButton:Gui
+	Field Minimum, Maximum, Stp
+	'Menus
+	Field HasMenu, MenuTick, OpenMenu:Gui
+	'Listbox
+	Field Selected:Gui, ListboxScrollbar:Gui, ListboxCounter, IsSelected
+	'SlideButton
+	Field SlideButtonButton:Gui, Text1:String, Text2:String
+	'Tabs
+	Field SelectedTab:Gui
+	'Labe;s
+	Field Align, Boarder
+	'Charts
+	Field ChartData:String, XLabel:String, YLabel:String, ContainsKey, ChartType '0=Bar  1=Line  2=Scatter  3=Pie
+	Global ChartFont:Font
+	
+	'Interaction
+	Global Over:Gui, OverTime, LastOver:Gui
+	Global Down:Gui, DownTime
+	Global Clicked:Gui, ClickedTime, ClickedLast:Gui
+	Global DoubleClicked:Gui
+	Field IsClicked, IsDoubleClicked, IsOver, IsDown
+	
+	'Main Drawing Functions
+
+	#REM
+	'**************************************************
+	' MG 26/09/2014 - Fanton engine integration
+	Function VDeviceWidth:Float(width:Int)		
+		Return fe4Gui.GetScaleX(width)
+	End
+	
+	Function VDeviceHeight:Float(height:Int)
+		Return fe4Gui.GetScaleY(height)
+	End
+	'**************************************************
+	#END
+	
+	
+	Function Draw()
+		'Print "(Gui)Draw"
+		If GuiLoaded = 0 Then CheckLoaded()
+		If CurrentScreen = Null Then Return 0
+		
+		'Normal Draw
+		If Gui_ScreenTransitions.Transitioning = 0 Then
+			CurrentScreen.DrawElements()
+			SetScissor(0, 0, DeviceWidth(), DeviceHeight())
+			Gui_Canvas.DrawAllCanvas()
+			'MsgBox
+			If GuiMessageBox.Visible = 1 Then
+				GuiMessageBox.Window.CloseButton.ButtonImg = Gui.Atlas
+				GuiMessageBox.DrawElements()
+			End If
+			
+			If Gui.ShowTooltips = 1 Then DrawTooltips()
+			
+		'Copy Old Screen Draw	
+		Elseif Gui_ScreenTransitions.Transitioning = 1 Then
+			Gui.StyleChanged = 1
+			CurrentScreen.DrawElements()
+			SetScissor(0, 0, DeviceWidth(), DeviceHeight())
+			Gui_Canvas.DrawAllCanvas()
+			'MsgBox
+			If GuiMessageBox.Visible = 1 Then
+				GuiMessageBox.DrawElements()
+			End If
+			
+			If Gui.ShowTooltips = 1 Then DrawTooltips()
+			Gui_ScreenTransitions.OldScreen = Gui_ScreenTransitions.CopyScreen()
+			Gui_ScreenTransitions.Transitioning = 2
+			Gui.CurrentScreen = Gui_ScreenTransitions.ToScreen
+			'Gui.StyleChanged = 1
+		'Copy New Screen
+		Elseif Gui_ScreenTransitions.Transitioning = 2 Then
+			'Gui.StyleChanged = 1
+			CurrentScreen.DrawElements()
+			SetScissor(0, 0, DeviceWidth(), DeviceHeight())
+			Gui_Canvas.DrawAllCanvas()
+			'MsgBox
+			If GuiMessageBox.Visible = 1 Then
+				GuiMessageBox.DrawElements()
+			End If
+			
+			If Gui.ShowTooltips = 1 Then DrawTooltips()
+			Gui_ScreenTransitions.NewScreen = Gui_ScreenTransitions.CopyScreen()
+			DrawImage(Gui_ScreenTransitions.OldScreen, 0, 0)
+			Gui_ScreenTransitions.Transitioning = 3
+			
+		Elseif Gui_ScreenTransitions.Transitioning = 3 Then
+			Gui_ScreenTransitions.DrawTransition()
+		
+		End If
+		
+		
+		StyleChanged = 0
+		
+	End Function
+	
+	Method DrawElements(Alpha:Float = 1.0)
+		Local SA:Float = Alpha
+		If Self.Type = "Window" And Closing = 1 Then SA = ClosingAlpha
+		If Visible = 0 Then SA = 0
+		SetColor(255,255,255)
+		SetAlpha(SA)	
+		
+		'Draw the Current Element
+		If Self.RealVisible Then
+			SetScissor(DrawingX, DrawingY, DrawingW, DrawingH)
+			Self.Draw2()
+			SetScissor(0, 0, DeviceWidth(), DeviceHeight())
+		End If
+		
+		If Self.Type = "Tab" And Self.Parent.SelectedTab = Self And Self.Canvas <> Null Then
+			Parent.SetScissorWithinSelf( (Parent.CanvasX - Parent.RealX), (Parent.CanvasY - Parent.RealY), Parent.CanvasW, Parent.CanvasH)
+			Self.Canvas.Draw()
+			SetScissor(0, 0, DeviceWidth(), DeviceHeight())
+		End If
+		
+		If OnFocus = Self Then DrawOnFocus(Self)
+		
+		'Draw The Elements Children
+		If Self.Children.Count > 0 And Self.SeperatedCanvas = 0 Then
+		
+			'Draws all children apart from window Buttons
+			If Minimised = 0 Or Minimising < 0 Then
+				For Local N:Gui = Eachin Self.Children
+					If N.Type <> "WindowButton" Then N.DrawElements(SA)
+				Next
+			End If
+			
+			'Ensures The window Buttons get drawn last
+			For Local N:Gui = Eachin Self.Children
+				If N.Type = "WindowButton" Then N.DrawElements(SA)
+			Next
+		End If
+		
+		
+		SetAlpha(1)
+		'If Moving Window Draw Cursor
+		If Type = "Window" And Moving = 1 Then DrawImageRect(Gui.Atlas, X + MovingX - 10, Y + MovingY - 10, 270, 320, 30, 30,0,(TitleBarHeight/1.47)/30.0, (TitleBarHeight/1.47)/30.0)
+		If Type = "Window" And Resizing = 1 Then DrawImageRect(Gui.Atlas, RealX + W - 20, RealY + H - 20, 300, 320, 30, 30, 0, (TitleBarHeight / 1.47) / 30.0, (TitleBarHeight / 1.47) / 30.0)
+
+	End Method
+	
+	
+		
+	'Main Update Function
+	
+	Function Update()
+		
+		
+		If GuiLoaded = 0 Then CheckLoaded()
+		If CurrentScreen = Null Then Return 0
+		
+		'Reset Mouse
+		If Gui.Over <> Null Then Gui.Over.IsOver = 0
+		Gui.Over = Null
+		
+		If Gui_ScreenTransitions.Transitioning = 3 Then
+			If Gui.Clicked <> Null Then Gui.Clicked.IsClicked = 0
+			Gui.Clicked = Null
+			If Gui.DoubleClicked <> Null Then Gui.DoubleClicked.IsDoubleClicked = 0
+			Gui.DoubleClicked = Null
+			If TouchDown() = 0 Then
+				If Gui.Down <> Null Then Gui.Down.IsDown = 0
+				Gui.Down = Null
+			End If
+		
+			Return
+		End If
+		
+
+		If GuiMessageBox.Visible = 1 Then
+			CurrentScreen.Active = 0
+		End If
+		
+		'Update All Elements
+		CurrentScreen.UpdateElements()
+		Gui_Canvas.UpdateAllCanvas()
+		
+		
+		'MsgBox
+		If GuiMessageBox.Visible = 1 Then
+			GuiMessageBox.UpdateElements()
+		End If
+		
+		If Gui.Clicked <> Null Then Gui.Clicked.IsClicked = 0
+		Gui.Clicked = Null
+		If Gui.DoubleClicked <> Null Then Gui.DoubleClicked.IsDoubleClicked = 0
+		Gui.DoubleClicked = Null
+		
+		'MouseOver Time
+		If Gui.Over <> Null Then
+			Gui.Over.IsOver = 1
+			If Gui.Over <> Gui.LastOver Then
+				Gui.LastOver = Gui.Over
+				Gui.OverTime = Millisecs()
+				Gui.ClickedLast = Null
+				Gui.ClickedTime = Millisecs - 500
+			EndIf
+		Else
+			Gui.OverTime = Millisecs()
+		EndIf
+		'MouseDown
+		If TouchDown() And Gui.Down = Null And Gui.Over <> Null And Gui.Over.RealActive = 1 Then
+			Gui.Down = Gui.Over
+			Gui.Down.IsDown = 1
+			Gui.DownTime = Millisecs()
+			SetCurrentWindow(Gui.Down)
+		End If
+		'MouseClick / Double Click
+		If Gui.Down <> Null And Gui.Over <> Null And TouchDown() = 0 Then
+			If Gui.ClickedLast <> Null And Gui.ClickedLast = Gui.Down And (Millisecs() -Gui.OverTime) < 300 Then
+				Gui.DoubleClicked = Gui.Down
+				Gui.DoubleClicked.IsDoubleClicked = 1
+				Gui.ClickedLast = Null
+				Gui.OverTime = Millisecs()
+			Else
+				Gui.Clicked = Gui.Down
+				Gui.Clicked.IsClicked = 1
+				Gui.ClickedTime = Millisecs()
+				Gui.ClickedLast = Gui.Down
+				Gui.OverTime = Millisecs()
+				Gui.TooltipOverTime = 0
+			End If
+		EndIf
+		'Reset Mouse Down
+		If TouchDown() = 0 Then
+			If Gui.Down <> Null Then Gui.Down.IsDown = 0
+			Gui.Down = Null
+		End If
+		'Mouse Moving
+		MouseMoving = 1
+		If TouchX() = OldMouseX And TouchY() = OldMouseY Then
+			MouseMoving = 0
+			If TooltipOverTime = 0 Then Gui.TooltipOverTime = Millisecs() + 400
+		Else
+			OldMouseX = TouchX()
+			OldMouseY = TouchY()
+			Gui.TooltipOverTime = 0
+		End If
+		
+		If OldCurrentWindow <> CurrentWindow Then
+			If CurrentWindow <> Null Then ZOrder(CurrentWindow.Parent)
+		End If
+		
+		'Close Menus
+		If Gui.Down <> Null And Gui.Down.Type <> "MenuItem" Then Gui_Menu.CloseAllMenus()
+		If MouseDown() = 1 And Gui.Down = Null Then Gui_Menu.CloseAllMenus()
+		
+		
+		
+		'Textbox Active
+		If MouseDown() = 1 Then
+			If Gui.Down <> Null Then
+				'Down On Textbox
+				If Gui.Down.Type = "TextBox" Then
+					If Gui.ActiveTextbox <> Null Then Gui.ActiveTextbox.TextActive = 0
+					Gui.ActiveTextbox = Gui.Down
+					Gui.ActiveTextbox.TextActive = 1
+				ElseIf Gui.Down.Parent <> Null And Gui.Down.Parent.Type = "TextBox" Then
+					If Gui.ActiveTextbox <> Null Then Gui.ActiveTextbox.TextActive = 0
+					Gui.ActiveTextbox = Gui.Down.Parent
+					Gui.ActiveTextbox.TextActive = 1
+				ElseIf Gui.Down.Parent.Parent <> Null And Gui.Down.Parent.Parent.Type = "TextBox" Then
+					If Gui.ActiveTextbox <> Null Then Gui.ActiveTextbox.TextActive = 0
+					Gui.ActiveTextbox = Gui.Down.Parent.Parent
+					Gui.ActiveTextbox.TextActive = 1
+				Else
+					If Gui.Down.Type <> "TextField"
+						If Gui.ActiveTextbox <> Null Then Gui.ActiveTextbox.TextActive = 0
+						Gui.ActiveTextbox = Null
+					Else
+						If Gui.ActiveTextbox <> Null And Gui.ActiveTextbox <> Gui.Down Then
+							If Gui.ActiveTextbox <> Null Then Gui.ActiveTextbox.TextActive = 0
+							Gui.ActiveTextbox = Null
+						End If
+						
+						
+					End If
+				End If
+			Else
+				If Gui.ActiveTextbox <> Null Then Gui.ActiveTextbox.TextActive = 0
+				Gui.ActiveTextbox = Null
+			End If
+		End If
+						
+		
+		If Gui.FileOperations <> Null And Gui.FileOperations.Visible = 1 Then
+			Gui.FileOperations.Update2()
+		End If
+		
+		
+		
+		CheckOnFocus()
+		
+	End Function
+
+	Method UpdateElements(ChecksOver = 1)
+		'Update the Current Element
+		Self.GetReal()
+
+		Self.CanvasX = RealX
+		Self.CanvasY = RealY
+		Self.CanvasW = W
+		Self.CanvasH = H
+
+		
+		Local CO = ChecksOver
+		If Self.Minimising <> 0 Or Self.Maximising <> 0 Or Closing = 1 Then CO = 0
+		
+		If Self.Visible Then
+			If Self.Type <> "WindowButton" Then
+				If Parent <> Null And Parent.Minimised = 0 Then
+					If CO = 1 Then Self.CheckOver()
+				End If
+			Else
+				If CO = 1 Then Self.CheckOver()
+				
+			End If
+		End If
+		
+		Self.Update2()
+		
+		'Updates The Elements Children
+		
+		
+		If Self.Children.Count > 0 And Self.SeperatedCanvas = 0 Then
+			'Updates all children apart from window Buttons
+			For Local N:Gui = EachIn Self.Children
+				If N.Type <> "WindowButton" Then
+					N.UpdateElements(CO)
+				End If
+				
+			Next
+			'Ensures The window Buttons get updated last
+			For Local N:Gui = EachIn Self.Children
+				If N.Type = "WindowButton" Then
+					N.UpdateElements(CO)
+				End If
+			Next
+			
+		End If
+	End Method
+	
+	Method CheckOver()
+		If RealVisible = 1 Then
+			Local RealX = Self.RealX
+			Local RealY = Self.RealY
+			Local W = Self.W
+			Local H = Self.H
+			
+			
+			If TouchX() >= RealX And TouchX() <= RealX + W Then
+				If TouchY() >= RealY And TouchY() <= RealY + H Then
+					If TouchX() >= DrawingX And TouchX <= DrawingX + DrawingW Then
+						If TouchY() >= DrawingY And TouchY <= DrawingY + DrawingH Then
+	
+							If IsResizeButton = 0 Then
+								If Gui.Down = Null Then
+									Gui.Over = Self
+								Else
+									If Gui.Down = Self Then
+										Gui.Over = Self
+									Else
+										Gui.Over = Null
+									Endif
+								Endif
+							Else
+								'ResizeButton Only
+								If TouchX() > RealX + W - (TouchY() -RealY) Then
+									If Gui.Down = Null Then
+										Gui.Over = Self
+									Else
+										If Gui.Down = Self Then
+											Gui.Over = Self
+										Else
+											Gui.Over = Null
+										Endif
+									End If
+								Endif
+							End If
+						
+						End If
+					End If
+				End If
+			End If
+		End If
+		
+		
+	End Method
+	
+	
+	
+	'Common Functions
+	
+	Function Draw3x3(X, Y, W, H, ImgX, ImgY, ImgW, ImgH, TileSize = 10)
+		'Print "guiBasic-Draw3x3"
+		'Top 3
+		DrawImageRect(Atlas, X, Y, ImgX, ImgY, TileSize, TileSize, 0, 1, 1)
+		DrawImageRect(Atlas, X + TileSize, Y, ImgX + TileSize, ImgY, ImgW - (TileSize * 2), TileSize, 0, (W - (TileSize * 2.0)) / (ImgW - (TileSize * 2.0)), 1)
+		DrawImageRect(Atlas, X + W - TileSize, Y, ImgX + ImgW - TileSize, ImgY, TileSize, TileSize, 0, 1, 1)
+		'Middle 3
+		DrawImageRect(Atlas, X, Y + TileSize, ImgX, ImgY + TileSize, TileSize, ImgH - (TileSize * 2), 0, 1, (H - (TileSize * 2.0)) / (ImgH - (TileSize * 2.0)))
+		DrawImageRect(Atlas, X + TileSize, Y + TileSize, ImgX + TileSize, ImgY + TileSize, ImgW - (TileSize * 2), ImgH - (TileSize * 2), 0, (W - (TileSize * 2.0)) / (ImgW - (TileSize * 2.0)), (H - (TileSize * 2.0)) / (ImgH - (TileSize * 2.0)))
+		DrawImageRect(Atlas, X + W - TileSize, Y + TileSize, ImgX + ImgW - TileSize, ImgY + TileSize, TileSize, ImgH - (TileSize * 2), 0, 1, (H - (TileSize * 2.0)) / (ImgH - (TileSize * 2.0)))
+		'Bottom 3
+		DrawImageRect(Atlas, X, Y + H - TileSize, ImgX, ImgY + ImgH - TileSize, TileSize, TileSize, 0, 1, 1)
+		DrawImageRect(Atlas, X + TileSize, Y + H - TileSize, ImgX + TileSize, ImgY + ImgH - TileSize, ImgW - (TileSize * 2), TileSize, 0, (W - (TileSize * 2.0)) / (ImgW - (TileSize * 2.0)), 1)
+		DrawImageRect(Atlas, X + W - TileSize, Y + H - TileSize, ImgX + ImgW - TileSize, ImgY+ImgH-TileSize, TileSize, TileSize, 0, 1, 1)
+		
+	End Function
+
+	Method GetReal()
+		RealX = X
+		RealY = Y
+		RealActive = Active
+		RealVisible = Visible
+		
+	
+		If Self.Parent <> Null And Self.Parent.Type = "Tab" And Self.Parent.IsSelected = 0 Then RealVisible = 0
+		
+		Local Parent:Gui = Self.Parent
+		If Parent <> Null And Parent.Type = "Tab" Then Parent = Parent.Parent
+		
+		'Get Real
+		If Parent <> Null
+			If Type <> "WindowButton" And Type <> "MsgBox" Then
+				RealX = RealX + Parent.CanvasX
+				RealY = RealY + Parent.CanvasY
+			Else
+				RealX = RealX + Parent.RealX
+				RealY = RealY + Parent.RealY
+			End If
+		
+			If Parent.RealVisible = 0 Then RealVisible = 0
+			If Parent.RealActive = 0 Then RealActive = 0
+			If Parent.Minimised = 1 And Type <> "WindowButton" Then RealVisible = 0
+		End If
+
+		If Type = "MsgBox" Then RealActive = 1
+		
+		'GetDrawing (Scissor)
+		If Parent = Null Then
+			DrawingX = RealX; DrawingY = RealY; DrawingW = W; DrawingH = H
+		Else
+			DrawingX = RealX
+			DrawingY = RealY
+			DrawingW = W
+			DrawingH = H
+
+			'Minimising Animation Going Up
+			If Animated = 1 And Self.Type = "Window" And Minimising > 0 Then
+				DrawingH = DrawingH - (Minimising)
+				Minimising = Minimising + AnimatedSpeed
+				If DrawingH <= TitleBarHeight Then Minimised = 1; Minimising = 0; DrawingH = TitleBarHeight
+			End If
+			'Minimising Animation Going Down
+			If Animated = 1 And Self.Type = "Window" And Minimising < 0 Then
+				DrawingH = TitleBarHeight - (Minimising)
+				Minimising = Minimising - AnimatedSpeed
+				
+				If DrawingH >= H Then Minimised = 0; Minimising = 0; DrawingH = H
+			End If
+			
+			'Window Minimised
+			If Self.Type = "Window" And Self.Minimised = 1 And Minimising = 0 Then
+				DrawingH = TitleBarHeight
+			End If
+			
+			
+			'Adjust For Canvas
+			
+			If Type <> "WindowButton" Then
+				If Type <> "Menu" And Type <> "Tab" Then
+					If Parent.CanvasX > DrawingX Then DrawingW = (Parent.CanvasX - DrawingW); DrawingX = Parent.CanvasX
+					If Parent.CanvasY > DrawingY Then DrawingH = (Parent.CanvasY - DrawingH); DrawingY = Parent.CanvasY
+				End If
+				
+				If DrawingX + DrawingW > Parent.CanvasX + Parent.CanvasW Then DrawingW = DrawingW - ( (DrawingX + DrawingW) - (Parent.CanvasX + Parent.CanvasW))
+				If DrawingY + DrawingH > Parent.CanvasY + Parent.CanvasH Then DrawingH = DrawingH - ( (DrawingY + DrawingH) - (Parent.CanvasY + Parent.CanvasH))
+			
+			
+			End If
+			
+			
+			
+			'Adjust For parent Drawing X
+			If Parent.DrawingX > DrawingX Then DrawingW = DrawingW - (Parent.DrawingX - DrawingX); DrawingX = Parent.DrawingX
+			If Parent.DrawingY > DrawingY Then DrawingH = DrawingH - (Parent.DrawingY - DrawingY); DrawingY = Parent.DrawingY
+			
+			If DrawingX + DrawingW > Parent.DrawingX + Parent.DrawingW Then DrawingW = DrawingW - ( (DrawingX + DrawingW) - (Parent.DrawingX + Parent.DrawingW))
+			If DrawingY + DrawingH > Parent.DrawingY + Parent.DrawingH Then DrawingH = DrawingH - ( (DrawingY + DrawingH) - (Parent.DrawingY + Parent.DrawingH))
+		End If
+	
+		If Self.Type = "MsgBox" Then
+			DrawingX = 0
+			DrawingY = 0
+			DrawingW = DeviceWidth()
+			DrawingH = DeviceHeight()
+			RealX = 0
+			RealY = 0
+			CanvasX = 0
+			CanvasY = 0
+			CanvasW = DeviceWidth()
+			CanvasH = DeviceHeight()
+		Endif
+		
+		
+		'Adjust for File Operations
+		If Gui.FileOperations <> Null And Gui.FileOperations.Visible = 1 Then
+			If Type <> "Screen" And PartOfFileOperations = 0 Then RealActive = 0
+			
+		End If
+		
+		
+	End Method
+	
+	Function CheckLoaded()
+
+		'**************************************************
+		' MG 26/09/2014 - Fanton engine integration
+		'If fe4Gui = Null Then fe4Gui = New ftEngine
+		'**************************************************
+
+		If Gui.Atlas = Null Then Gui.Atlas = LoadImage("Atlas.png")
+		If Gui.NormalFont = Null Then Gui.NormalFont = Font.Load("normalfont.txt")					' Segoe 13 Small alias
+		If Gui.NormalFontInv = Null Then Gui.NormalFontInv = Font.Load("normalfontinv.txt")		' Segoe 13 Small alias (W)
+		If Gui.TitleFont = Null Then Gui.TitleFont = Font.Load("titlefont.txt")					' Segoe Semibold 14 Bold Small alias
+		If Gui.TitleBarHeight = 0 Then SetFont(Gui.TitleFont); Gui.TitleBarHeight = FontHeight() + 10
+		FileOps = LoadImage("fileops.png")
+		If Gui.AnimatedSpeed = 0 Then Gui.AnimatedSpeed = 60
+		If Gui.Animated = -1 Then Gui.Animated = 1
+		Gui_Canvas.CanvasList = New List<Gui_Canvas>
+		GuiMessageBox = New Gui_MsgBox
+		ChartFont = Font.Load("chartfont.txt")														' Segoe 13 Small alias
+		GuiLoaded = 1
+		
+	End Function
+
+	
+	'Creation Functions
+	
+	Function CreateScreen:Gui()
+		Local N:Gui = New Gui_Screen
+		If Gui.CurrentScreen = Null Then Gui.CurrentScreen = N
+		Return N
+	End Function	
+	Function CreateWindow:Gui(X, Y, W, H, Title:String, Parent:Gui, Order = 1, Closeable = 1, Minimisable = 1, Maximisable = 1, Sizeable = 1, Moveable = 1, Statusbar = 1)
+		Local N:Gui = New Gui_Window(X, Y, W, H, Title, Parent, Order, Closeable, Minimisable, Maximisable, Sizeable, Moveable, Statusbar)
+		Return N
+	End Function	
+	Function CreateButton:Gui(X, Y, W, H, Text:String, Parent:Gui, Style = 0)
+		Local N:Gui = New Gui_Button(X, Y, W, H, Text, Parent, Style)
+		Return N
+	End Function
+	Function CreateImgButton:Gui(X, Y, W, H, Img:Image, Parent:Gui, ImgX = 0, ImgY = 0, ImgW = 0, ImgH = 0)
+		Local N:Gui = New Gui_ImgButton(X, Y, W, H, Img, Parent, ImgX, ImgY, ImgW, ImgH)
+		Return N
+	End Function
+	Function CreateSlideButton:Gui(X, Y, W, H, Text1:String, Text2:String, Parent:Gui, Value = 0)
+		Local N:Gui = New Gui_SlideButton(X, Y, W, H, Text1, Text2, Parent, Value)
+		Return N
+	End Function
+	Function CreateTickbox:Gui(X, Y, H, Text:String, Parent:Gui, StartValue = 0)
+		Local N:Gui = New Gui_Tickbox(X, Y, H, Text, Parent, StartValue)
+		Return N
+	End Function
+	Function CreateRadio:Gui(X, Y, H, Text:String, Parent:Gui, Group = 0, StartSelected = 0)
+		Local N:Gui = New Gui_Radio(X, Y, H, Text, Parent, Group, StartSelected)
+		Return N
+	End Function	
+	Function CreateDropDown:Gui(X, Y, W, H, Parent:Gui, StartText:String = "Please Select...")
+		Local N:Gui = New Gui_DropDown(X, Y, W, H, Parent, StartText)
+		Return N
+	End Function
+	Function CreateDropDownItem:Gui(Text:String, Parent:Gui, Value = 0)
+		Local N:Gui = New Gui_DropDownItem(Text, Parent, Value)
+		Return N
+	End Function
+	Function CreateVScrollbar:Gui(X, Y, W, H, Minimum, Maximum, Parent:Gui, Value = 0, Stp = 0)
+		Local N:Gui = New Gui_VScrollbar(X, Y, W, H, Minimum, Maximum, Parent, Value, Stp)
+		Return N
+	End Function
+	Function CreateHScrollbar:Gui(X, Y, W, H, Minimum, Maximum, Parent:Gui, Value = 0, Stp = 0)
+		Local N:Gui = New Gui_HScrollbar(X, Y, W, H, Minimum, Maximum, Parent, Value, Stp)
+		Return N
+	End Function
+	Function CreateSlider:Gui(X, Y, W, H, Minimum, Maximum, Parent:Gui, Value = 0, Stp = 0)
+		Local N:Gui = New Gui_Slider(X, Y, W, H, Minimum, Maximum, Parent, Value, Stp)
+		Return N
+	End Function
+	Function CreateMenu:Gui(Text:String, Parent:Gui)
+		Local N:Gui = New Gui_Menu(Text, Parent)
+		Return N
+	End Function
+	Function CreateMenuItem:Gui(Text:String, Parent:Gui, Tickbox = 0, Value = 0)
+		Local N:Gui = New Gui_MenuItem(Text, Parent, Tickbox, Value)
+		Return N
+	End Function
+	Function CreateListbox:Gui(X,Y,W,H, Parent:Gui)
+		Local N:Gui = New Gui_Listbox(X, Y, W, H, Parent)
+		Return N
+	End Function
+	Function CreateListboxItem:Gui(Text:String, Parent:Gui, Value = 0)
+		Local N:Gui = New Gui_ListboxItem(Text, Parent, Value)
+		Return N
+	End Function
+	Function CreateTab:Gui(Text:String, Parent:Gui)
+		Local N:Gui = New Gui_Tab(Text, Parent)
+		Return N
+	End Function
+	Function CreateLabel:Gui(X, Y, Text:String, Parent:Gui, Align = 0, Boarder = 0)
+		Local N:Gui = New Gui_Label(X, Y, Text, Parent, Align, Boarder)
+		Return N
+	End Function
+	Function CreateTextField:Gui(X, Y, W, H, Parent:Gui, Text:String, AllowNumbers = 1, AllowLetters = 1, AllowSymbols = 1, MaxLength = 0)
+		Local N:Gui = New Gui_TextField(X, Y, W, H, Parent, Text, AllowNumbers, AllowLetters, AllowSymbols, MaxLength)
+		Return N
+	End Function
+	Function CreateTextBox:Gui(X, Y, W, H, Parent:Gui, Text:String, AllowNumbers = 1, AllowLetters = 1, AllowSymbols = 1, Wordwrap = 0)
+		Local N:Gui = New Gui_TextBox(X, Y, W, H, Parent, Text, AllowNumbers, AllowLetters, AllowSymbols, Wordwrap)
+		Return N
+	End Function
+	Function CreateTable:Gui(X, Y, W, H, Parent:Gui, Rows, Colomns, CellWidth, CellHeight)
+		Local N:Gui = New Gui_Table(X, Y, W, H, Parent, Rows, Colomns, CellWidth, CellHeight)
+		Return N
+	End Function
+	Function CreateChart:Gui(X, Y, W, H, Parent:Gui, ChartType, Data:String, Title:String = "", XLabel:String = "", YLabel:String = "", ContainsKey = 0)
+		Local N:Gui = New Gui_Chart(X, Y, W, H, Parent, ChartType, Data, Title, XLabel, YLabel, ContainsKey)
+		Return N
+	End Function
+	'Empty Methods
+	
+	Method Draw2()
+		'Used to draw the individual Item
+	End Method
+	
+	Method Update2()
+		'Used to Update individual Item
+	End Method
+	
+	Function DrawTooltips()
+		SetFont(NormalFont)
+		If MouseMoving = 0 And TooltipOverTime <> 0 And Gui.Over <> Null And Gui.Over.Tooltip <> "" And Millisecs() > Gui.TooltipOverTime Then
+			Local W = TextWidthEscape(NormalFont,Gui.Over.Tooltip) + 4
+			Local H = TextHeightEscape(NormalFont,Gui.Over.Tooltip) + 4
+			Local X = TouchX() +7
+			Local Y = TouchY() +16
+			If X + W > DeviceWidth() Then X = DeviceWidth() -W
+			If Y + H > DeviceHeight() Then Y = DeviceHeight() -H
+			
+			SetColor(100, 100, 100)
+			DrawRect(X, Y, W, H)
+			SetColor(255, 255, 190)
+			DrawRect(X + 1, Y + 1, W - 2, H - 2)
+			SetColor(255, 255, 255)
+			DrawAlignedText(NormalFont, X + 2, Y + 2,Gui.Over.Tooltip)
+		End If
+	End Function
+	
+	
+	'Z Ordering
+	
+	Function ZOrder(TheParent:Gui)
+		Local TempList:List<Gui> = New List<Gui>
+		
+		'Tabs
+		For Local i:Gui = EachIn TheParent.Children
+			If i.Type = "Tab" Then
+				TempList.AddLast(i)
+			End If
+		Next
+		
+		'Standard Elements - First in TempList
+		For Local i:Gui = EachIn TheParent.Children
+			If i.Type <> "Window" And i.Type <> "Label" And i.Type <> "Tab" And i.Type <> "Menu" And i.Type <> "VScrollbar" And i.Type <> "HScrollbar" And i.Type <> "WindowButton" Then
+				TempList.AddLast(i)
+			End If
+		Next
+		'Labels
+		For Local i:Gui = EachIn TheParent.Children
+			If i.Type = "Label" Then
+				TempList.AddLast(i)
+			End If
+		Next
+		
+		'Scrollbars
+		For Local i:Gui = EachIn TheParent.Children
+			If i.Type = "VScrollbar" Or i.Type = "HScrollbar" Then
+				TempList.AddLast(i)
+			End If
+		Next
+		
+		'Menus
+		For Local i:Gui = EachIn TheParent.Children
+			If i.Type = "Menu" Then
+				TempList.AddLast(i)
+			End If
+		Next
+		
+		
+		
+		'Windows
+		Local WindowList:List<Gui> = New List<Gui>
+		'Window Orders 0
+		For Local i:Gui = EachIn TheParent.Children
+			If i.Type = "Window" Then
+				If i.Order = 0 And CurrentWindow <> i Then WindowList.AddLast(i)
+			End If
+		Next
+		If CurrentWindow <> Null And CurrentWindow.Order = 0 Then WindowList.AddLast(CurrentWindow)
+		
+		'Window Orders 1
+		For Local i:Gui = EachIn TheParent.Children
+			If i.Type = "Window" Then
+				If i.Order = 1 And CurrentWindow <> i Then WindowList.AddLast(i)
+			End If
+		Next
+		If CurrentWindow <> Null And CurrentWindow.Order = 1 Then WindowList.AddLast(CurrentWindow)
+		
+		'Window Orders 2
+		For Local i:Gui = EachIn TheParent.Children
+			If i.Type = "Window" Then
+				If i.Order = 2 And CurrentWindow <> i Then WindowList.AddLast(i)
+			End If
+		Next
+		If CurrentWindow <> Null And CurrentWindow.Order = 2 Then WindowList.AddLast(CurrentWindow)
+		
+		
+		'Window Buttons
+		For Local i:Gui = EachIn TheParent.Children
+			If i.Type = "WindowButton" Then
+				TempList.AddLast(i)
+			End If
+		Next
+		
+		
+		
+		'Compile TempList
+		For Local I:Gui = EachIn WindowList
+			TempList.AddLast(I)
+		Next
+		
+		
+		'Transfer to old List
+		TheParent.Children = TempList
+		
+		OldCurrentWindow = CurrentWindow
+	End Function
+	
+	
+	'Element Specific Methods
+	
+	Method AddIcon(Image:Image, ImgX = 0, ImgY = 0, ImgW = 0, ImgH = 0)
+		If Type = "Window" Or Type = "MenuItem" Then
+			If Type = "MenuItem" And MenuTick = 1 Then Return
+			Icon = Image
+			IconX = ImgX
+			IconY = ImgY
+			IconW = ImgW
+			IconH = ImgH
+			If Image <> Null And IconW = 0 Then IconW = Image.Width
+			If Image <> Null And IconH = 0 Then IconH = Image.Height
+			If Type = "MenuItem" Then Value = Value * -1
+		End If
+	End Method
+	
+	
+	Function WindowButtonEvents()
+		
+		
+	End Function
+	
+	
+	
+	Function SetCurrentWindow(Obj:Gui)
+		
+		If Obj.Type = "Window" Then
+			CurrentWindow = Obj
+		Else
+			Local i:Gui = Obj
+			Local Window:Gui
+			
+			Repeat
+				If i.Type = "Window" Then
+					Window = i
+					Exit
+				End If
+				If i.Parent <> Null Then
+					i = i.Parent
+				Else
+					Exit
+				End If
+			Forever
+			
+			If Window <> Null Then CurrentWindow = Window
+		End If
+	End Function
+	
+	Method SetScissorWithinSelf(X, Y, W, H)
+		Local DX, DY, DW, DH
+		DX = DrawingX
+		DY = DrawingY
+		DW = DrawingW
+		DH = DrawingH
+		
+		
+		If RealX + X > DrawingX Then DW = DW - ( (RealX + X) - DrawingX); DX = RealX + X
+		If RealY + Y > DrawingY Then DH = DH - ( (RealY + Y) - DrawingY); DY = RealY + Y
+		
+		If (RealX + X + W) < (DX + DW) Then DW = DW - ( (DX + DW) - (RealX + X + W))
+		If (RealY + Y + H) < (DY + DH) Then DH = DH - ( (DY + DH) - (RealY + Y + H))
+		
+		SetScissor(DX, DY, DW, DH)
+	End Method
+	
+	
+	
+	Function MsgBox(Title:String, Text:String, Buttons = 1, CloseButton = 1, ID:String = "None")
+		GuiMessageBoxReturned = 0
+		
+		Gui_MsgBox.Create(Title, Text, Buttons, CloseButton, ID)
+		
+	End Function
+	Function CheckMsgBox:Int(ID:String, Button = 1)
+		If GuiMessageBoxReturned = 1 And GuiMessageBoxReturnedId = ID And Button = GuiMessageBoxReturnedButton Then
+			GuiMessageBoxReturned = 0
+			GuiMessageBoxReturnedButton = 0
+			Return 1
+		End If
+	End Function
+
+	Function DrawAlignedText(fnt:Font, X, Y, Text:String, Align = 0)
+		Local YY = Y
+		SetFont(fnt)
+		Local AlignRight=0
+		If Align <> 0 Then AlignRight=TextWidthEscape(fnt,Text)
+		For Local line:String = EachIn Text.Split("~n")
+			Local XX = X
+			If Align = 1 Then XX = XX + ((AlignRight - TextWidth(line)) / 2)
+			If Align = 2 Then XX = XX + AlignRight - TextWidth(line)
+			DrawText(line, XX, YY)
+			YY = YY + TextHeight(line)
+		Next
+	End Function
+	Function TextWidthEscape(fnt:Font, Text:String)
+		Local XXX = 0
+		Local XX = 0
+		SetFont(fnt)
+		For Local line:String = EachIn Text.Split("~n")
+			XX = TextWidth(line)
+			If XX>XXX Then XXX=XX
+		Next
+		Return XXX
+	End Function
+	Function TextHeightEscape(fnt:Font, Text:String)
+		Local YY = 0
+		SetFont(fnt)
+		For Local line:String = EachIn Text.Split("~n")
+			YY = YY + TextHeight(line)
+		Next
+		Return YY
+	End Function
+	'Screen Transitions
+	Function SetScreen(Screen:Gui)
+		Gui.CurrentScreen = Screen
+		Gui.StyleChanged = 1
+		ForceRedraw(Screen)
+		OnFocus = Null
+		Gui.CurrentWindow = Null
+		OnFocus = Null
+	End Function	
+	Function FadeToScreen(Screen:Gui)
+		Gui_ScreenTransitions.Style = 1
+		Gui_ScreenTransitions.Transitioning = 1
+		Gui_ScreenTransitions.ToScreen = Screen
+		ForceRedraw(Screen)
+		Gui.CurrentWindow = Null
+		OnFocus = Null
+	End Function
+	Function SlideToScreen(Screen:Gui)
+		Gui_ScreenTransitions.Style = 2
+		Gui_ScreenTransitions.Transitioning = 1
+		Gui_ScreenTransitions.ToScreen = Screen
+		ForceRedraw(Screen)
+		Gui.CurrentWindow = Null
+		OnFocus = Null
+	End Function
+	Function TurnToScreen(Screen:Gui)
+		Gui_ScreenTransitions.Style = 3
+		Gui_ScreenTransitions.Transitioning = 1
+		Gui_ScreenTransitions.ToScreen = Screen
+		ForceRedraw(Screen)
+		Gui.CurrentWindow = Null
+		OnFocus = Null
+	End Function
+	Function ZoomToScreen(Screen:Gui)
+		Gui_ScreenTransitions.Style = 4
+		Gui_ScreenTransitions.Transitioning = 1
+		Gui_ScreenTransitions.ToScreen = Screen
+		ForceRedraw(Screen)
+		Gui.CurrentWindow = Null
+		OnFocus = Null
+	End Function
+	
+	Function SetTheme(Img:Image)
+		Gui.Atlas = Img
+		StyleChanged = 1
+		Gui.MinimiseButtonTurn = 0
+		GuiMessageBox.Window.CloseButton.ButtonImg = Gui.Atlas
+		GuiMessageBox.Window.MinimiseButton.ButtonImg = Gui.Atlas
+		GuiMessageBox.Window.MaximiseButton.ButtonImg = Gui.Atlas
+		
+		ForceRedraw(CurrentScreen)
+	End Function
+	
+	Function SetFonts(TitleFontPath:String = "", NormalFontPath:String = "", NormalFontInvPath:String = "")
+		Gui.TitleFont = Font.Load(TitleFontPath)
+		Gui.NormalFont = Font.Load(NormalFontPath)
+		Gui.NormalFontInv = Font.Load(NormalFontInvPath)
+		StyleChanged = 1
+		ForceRedraw(CurrentScreen)
+	End Function
+	
+	
+	
+	Function ForceRedraw(Screen:Gui)
+		For Local i:Gui = EachIn Screen.Children
+			If i.Type = "Window" Then
+				i.CloseButton.ButtonImg = Gui.Atlas
+				i.MinimiseButton.ButtonImg = Gui.Atlas
+				i.MaximiseButton.ButtonImg = Gui.Atlas
+				i.ResizeButton.ButtonImg = Gui.Atlas
+			End If
+			ForceRedraw2(i)
+		Next
+	End Function
+	
+	Function ForceRedraw2(Screen:Gui)
+		For Local i:Gui = EachIn Screen.Children
+			If i.Type = "Window" Then
+				i.CloseButton.ButtonImg = Gui.Atlas
+				i.MinimiseButton.ButtonImg = Gui.Atlas
+				i.MaximiseButton.ButtonImg = Gui.Atlas
+				i.ResizeButton.ButtonImg = Gui.Atlas
+			End If
+			ForceRedraw2(i)
+		Next
+	End Function
+	
+	
+
+	Function CheckOnFocus()
+		Local TabHit = 0, ArrowHit = 0
+		'SeperatedCanvas
+		If OnFocus <> Null Then
+			If OnFocus.Parent.SeperatedCanvas = 1 Then
+				If OnFocus.Parent.Minimised = 1 Then
+					OnFocus=OnFocus.Parent
+				EndIf
+			EndIf
+		EndIf
+		
+		
+		'Make GuiDown OnFocus With exceptions
+		Local SliderDown:Gui
+		If Gui.Down <> Null Then
+			If Gui.Down.Type = "PlusButton" Or Gui.Down.Type = "MinusButton" Or Gui.Down.Type = "ScrollbarSlider" Or Gui.Down.Type = "SliderButton" Then
+				SliderDown = Gui.Down.Parent
+			EndIf
+			If Gui.Down.Type = "VScrollbar" Or Gui.Down.Type = "HScrollbar" Or Gui.Down.Type = "Slider" Then
+				SliderDown = Gui.Down
+			EndIf
+			
+			If SliderDown = Null Then
+				OnFocus = Gui.Down
+			Else
+				If SliderDown.Parent.Type <> "Table" And SliderDown.Parent.Type <> "Listbox" Then
+					OnFocus = SliderDown
+				EndIf
+			EndIf
+		EndIf
+		
+		'TextField/Box Active
+		If OnFocus <> Null Then
+			If OnFocus.Type = "TextBox" Or OnFocus.Type = "TextField" Then
+				Gui.ActiveTextbox = OnFocus
+			EndIf
+		Else
+			Gui.ActiveTextbox = Null
+		EndIf
+		
+		'Table Cell Adj
+		If OnFocus <> Null And OnFocus.Parent.Type = "TableCell" Then OnFocus = OnFocus.Parent
+		
+		'TableTextField Active
+		If OnFocus <> Null And OnFocus.Type = "TableCell" Then
+			For Local i:Gui = EachIn OnFocus.Children
+				If i.Type = "TextField" Then
+					ActiveTextbox = i
+					Exit
+				EndIf
+			Next
+		EndIf
+		
+		
+		'Tab Pressed
+		If KeyHit(KEY_TAB) And KeyDown(KEY_SHIFT) = 0 Then
+			TabHit = 1
+			Gui.ActiveTextbox = Null
+			
+			'Cycle Through Parent elements
+			If Gui.OnFocus <> Null And Gui.OnFocus.Type <> "DropDownItem" And Gui.OnFocus.Type <> "" And Gui.OnFocus.Type <> "MenuItem" Then
+				If OnFocus.Type = "WindowButton" Then
+					Local Found = 0
+					'Check if winodw has Menu Then Set OnFocus
+					If OnFocus.Parent.HasMenu And Found = 0 Then
+						For Local i:Gui = EachIn OnFocus.Parent.Children
+							If i.Type = "Menu" And i.RealVisible = 1 And i.RealActive = 1 Then
+								OnFocus = i
+								Found = 1
+								Exit
+							End If
+						Next
+					End If
+					'Check if winodw has Tabs Then Set OnFocus
+					If OnFocus.Parent.HasTabs And Found = 0 Then
+						For Local i:Gui = EachIn OnFocus.Parent.Children
+							If i.Type = "Tab" And i.RealVisible = 1 And i.RealActive = 1 Then
+								OnFocus = i
+								Found = 1
+								Exit
+							End If
+						Next
+					End If
+					'Check if winodw has Elements Then Set OnFocus
+					If Found = 0 Then
+						For Local i:Gui = EachIn OnFocus.Parent.Children
+							If i.Type <> "Label" And i.Type <> "WindowButton" And i.RealVisible = 1 And i.RealActive = 1 Then
+								OnFocus = i
+								Found = 1
+								Exit
+							End If
+						Next
+					End If
+					
+				ElseIf OnFocus.Type = "Menu" Then
+					Local Found = 0
+					'First Check if winodow/Screen has Tabs Then Set OnFocus
+					If OnFocus.Parent.HasTabs And Found = 0 Then
+						For Local i:Gui = EachIn OnFocus.Parent.Children
+							If i.Type = "Tab" And i.RealVisible = 1 And i.RealActive = 1 Then
+								OnFocus = i
+								Found = 1
+								Exit
+							End If
+						Next
+					End If
+					'Check if winodw/Screen has Elements Then Set OnFocus
+					If Found = 0 Then
+						For Local i:Gui = EachIn OnFocus.Parent.Children
+							If i.Type <> "WindowButton" And i.Type <> "Menu" And i.Type <> "Tab" And i.Type <> "Label" And i.RealVisible = 1 And i.RealActive = 1 Then
+								OnFocus = i
+								Found = 1
+								Exit
+							End If
+						Next
+					End If
+					'Lastly Check if is window and has buttons Then setfocus
+					If Found = 0 And OnFocus.Parent.Type = "Window" Then
+						For Local i:Gui = EachIn OnFocus.Parent.Children
+							If i.Type = "WindowButton" And i.RealVisible = 1 And i.RealActive = 1 Then
+								OnFocus = i
+								Found = 1
+								Exit
+							End If
+						Next
+					End If
+					
+				
+				ElseIf OnFocus.Type = "Tab" Then
+					Local Found = 0
+					'First Check if winodw has Elements Then Set OnFocus
+					If Found = 0 Then
+						For Local i:Gui = EachIn OnFocus.Parent.Children
+							If i.Type <> "Menu" And i.Type <> "Tab" And i.Type <> "WindowButton" And i.Type <> "Label" And i.RealVisible = 1 And i.RealActive = 1 Then
+								OnFocus = i
+								Found = 1
+								Exit
+							End If
+						Next
+					End If
+					'Then Check if Window and Set On Buttons OnFocus
+					If Found = 0 And OnFocus.Parent.Type = "Window" Then
+						For Local i:Gui = EachIn OnFocus.Parent.Children
+							If i.Type = "WindowButton" And i.RealVisible = 1 And i.RealActive = 1 Then
+								OnFocus = i
+								Found = 1
+								Exit
+							End If
+						Next
+					End If
+					'Then Check if Window Has Menu and set OnFocus
+					If Found = 0 And OnFocus.Parent.HasMenu Then
+						For Local i:Gui = EachIn OnFocus.Parent.Children
+							If i.Type = "Menu" And i.RealVisible = 1 And i.RealActive = 1 Then
+								OnFocus = i
+								Found = 1
+								Exit
+							End If
+						Next
+					End If
+					
+				ElseIf OnFocus.Type = "TableCell" Then
+					'Get Next Element
+					Local OldFound = 0
+					Local Found = 0
+					For Local i:Gui = EachIn OnFocus.Parent.Children
+						If OldFound = 1 Then
+							If i.Type = "TableCell" And i.IsHeader = 0 And i.RealActive = 1 And i.RealVisible = 1 Then
+								OnFocus = i
+								If OnFocus.Children.Count > 0 And OnFocus.Children.First <> Null Then
+									If OnFocus.Children.First.Type = "TextField" Or OnFocus.Children.First.Type = "TextBox" Then
+										Gui.CursorLocation = OnFocus.Children.First.Text.Length
+									End If
+								EndIf
+								Found = 1
+								Exit
+							End If
+						End If
+						If i = OnFocus Then OldFound = 1
+					Next
+					'Start from beginning if nex not found
+					If Found = 0 Then
+						For Local i:Gui = EachIn OnFocus.Parent.Children
+							If i.Type = "TableCell" And i.IsHeader = 0 And i.RealActive = 1 And i.RealVisible = 1 Then
+								OnFocus = i
+								If OnFocus.Children.Count > 0 And OnFocus.Children.First <> Null Then
+									If OnFocus.Children.First.Type = "TextField" Or OnFocus.Children.First.Type = "TextBox" Then
+										Gui.CursorLocation = OnFocus.Children.First.Text.Length
+									End If
+								EndIf
+								Found = 1
+								Exit
+							End If
+						Next
+					End If
+				ElseIf OnFocus.Type = "ListboxItem" Then
+					'Get Next Element
+					Local OldFound = 0
+					Local Found = 0
+					OnFocus = OnFocus.Parent
+					For Local i:Gui = EachIn OnFocus.Parent.Children
+						If OldFound = 1 Then
+							If i.Type <> "WindowButton" And i.Type <> "Menu" And i.Type <> "Tab" And i.Type <> "Label" And i.RealActive = 1 And i.RealVisible = 1 Then
+								OnFocus = i
+								Found = 1
+								Exit
+							End If
+						End If
+						If i = OnFocus Then OldFound = 1
+					Next
+					'Start from beginning if nex not found
+					If Found = 0 Then
+						For Local i:Gui = EachIn OnFocus.Parent.Children
+							If i.Type <> "WindowButton" And i.Type <> "Menu" And i.Type <> "Tab" And i.Type <> "Label" And i.RealActive = 1 And i.RealVisible = 1 Then
+								OnFocus = i
+								Found = 1
+								Exit
+							End If
+						Next
+					End If	
+					
+					
+					
+					
+				Else ' OnFocus is other Element
+					'Get Next Element
+					Local OldFound = 0
+					Local Found = 0
+					For Local i:Gui = EachIn OnFocus.Parent.Children
+						If OldFound = 1 Then
+							If i.Type <> "WindowButton" And i.Type <> "Menu" And i.Type <> "Tab" And i.Type <> "Label" And i.RealActive = 1 And i.RealVisible = 1 Then
+								OnFocus = i
+								Found = 1
+								If OnFocus.Type = "TextField" Or OnFocus.Type = "TextBox" Then
+									Gui.CursorLocation = OnFocus.Text.Length
+								EndIf
+								Exit
+							End If
+						End If
+						If i = OnFocus Then OldFound = 1
+					Next
+					'Start from beginning if nex not found
+					If Found = 0 Then
+						For Local i:Gui = Eachin OnFocus.Parent.Children
+							If i.Type <> "WindowButton" And i.Type <> "Menu" And i.Type <> "Tab" And i.Type <> "Label" And i.RealActive = 1 And i.RealVisible = 1 Then
+								OnFocus = i
+								If OnFocus.Type = "TextField" Or OnFocus.Type = "TextBox" Then
+									Gui.CursorLocation = OnFocus.Text.Length
+								Endif
+								Found = 1
+								Exit
+							End If
+						Next
+					End If
+					
+					
+				End If 'Long list of 'elseif' current element types
+				
+				
+				
+			End If 'OnFocus <> Null
+			
+			'Got OnFocus From Null
+			Local Found = 0
+			If Gui.OnFocus = Null Then
+				If Gui.CurrentWindow = Null Then
+					'Try for Element Within Screen
+					If Found = 0 Then
+						For Local i:Gui = EachIn Gui.CurrentScreen.Children
+							If i.Type <> "Tab" And i.Type <> "Menu" And i.RealVisible = 1 And i.RealActive = 1 Then
+								 OnFocus = i
+								 Found = 1
+								 Exit
+							End If
+						Next
+					End If
+					'Try for Tab  Within Screen
+					If Found = 0 Then
+						For Local i:Gui = EachIn Gui.CurrentScreen.Children
+							If i.Type = "Tab" And i.RealVisible = 1 And i.RealActive = 1 Then
+								 OnFocus = i
+								 Found = 1
+								 Exit
+							End If
+						Next
+					End If
+					'Try for Menu  Within Screen
+					If Found = 0 Then
+						For Local i:Gui = EachIn Gui.CurrentScreen.Children
+							If i.Type = "Menu" And i.RealVisible = 1 And i.RealActive = 1 Then
+								 OnFocus = i
+								 Found = 1
+								 Exit
+							End If
+						Next
+					End If
+		
+				Else 'Else there is a current Window
+					'Try for an element Within CurrentWindow
+					If Found = 0 Then
+						For Local i:Gui = EachIn Gui.CurrentWindow.Children
+							If i.Type <> "Tab" And i.Type <> "Menu" And i.Type <> "WindowButton" And i.RealVisible = 1 And i.RealActive = 1 Then
+								 OnFocus = i
+								 Found = 1
+								 Exit
+							End If
+						Next
+					End If
+					'Try for a Tab Within CurrentWindow
+					If Found = 0 Then
+						For Local i:Gui = EachIn Gui.CurrentWindow.Children
+							If i.Type = "Tab" And i.RealVisible = 1 And i.RealActive = 1 Then
+								 OnFocus = i
+								 Found = 1
+								 Exit
+							End If
+						Next
+					End If
+					'Try for a Menu Within CurrentWindow
+					If Found = 0 Then
+						For Local i:Gui = EachIn Gui.CurrentWindow.Children
+							If i.Type = "Menu" And i.RealVisible = 1 And i.RealActive = 1 Then
+								 OnFocus = i
+								 Found = 1
+								 Exit
+							End If
+						Next
+					End If
+					'Try for a Window Button Within CurrentWindow
+					'If Found = 0 Then
+					'	For Local i:Gui = EachIn Gui.CurrentWindow.Children
+					'		If i.Type = "WindowButton" And i.IsResizeButton = 0 And i.RealVisible = 1 And i.RealActive = 1 Then
+					'			 OnFocus = i
+					'			 Found = 1
+					'			 Exit
+					'		End If
+					'	Next
+					'End If
+					'If Cannot find any elements in the current window make the window itself onfocus
+					If Found = 0 Then OnFocus = CurrentWindow
+				End If
+				Return 0
+			End If  ' Tab Pressed and OnFocus = Null
+			
+			
+			
+			
+
+		End If ' Tab Pressed
+		
+		'Shift Tab Pressed
+		If KeyDown(KEY_SHIFT) And KeyHit(KEY_TAB) And OnFocus <> Null And OnFocus.Parent <> Null Then
+			Gui.ActiveTextbox = Null
+			If OnFocus.Type = "WindowButton" Then
+				OnFocus = OnFocus.Parent
+				CurrentWindow = Null
+			ElseIf OnFocus.Type = "Menu" Then
+				Local Found = 0
+				'Try For Window Button First
+				If Found = 0 And OnFocus.Parent.Type = "Window" Then
+					For Local i:Gui = EachIn OnFocus.Parent.Children
+						If i.Type = "WindowButton" And i.IsResizeButton = 0 And i.RealActive = 1 And i.RealVisible = 1 Then
+							OnFocus = i
+							Found = 1
+							Exit
+						End If
+					Next
+				End If
+				'If no window button And Is Window make the window its in onfocus
+				If Found = 0 And OnFocus.Parent.Type = "Window" Then
+					OnFocus = OnFocus.Parent
+					CurrentWindow = Null
+					Found = 1
+				End If
+				
+						
+				
+			ElseIf OnFocus.Type = "Tab" Then
+				Local Found = 0
+				'Try For Menu First
+				If Found = 0 And OnFocus.Parent.HasMenu Then
+					For Local i:Gui = EachIn OnFocus.Parent.Children
+						If i.Type = "Menu" And i.RealActive = 1 And i.RealVisible = 1 Then
+							OnFocus = i
+							Found = 1
+							Exit
+						End If
+					Next
+				End If
+				'Try For Window Button 
+				If Found = 0 And OnFocus.Parent.Type = "Window" Then
+					For Local i:Gui = EachIn OnFocus.Parent.Children
+						If i.Type = "WindowButton" And i.IsResizeButton = 0 And i.RealActive = 1 And i.RealVisible = 1 Then
+							OnFocus = i
+							Found = 1
+							Exit
+						End If
+					Next
+				End If
+				'Try for Window 
+				If Found = 0 And OnFocus.Parent.Type = "Window" Then
+					OnFocus = OnFocus.Parent
+					CurrentWindow = Null
+					Found = 1
+				End If
+			
+			Else 'Is just a normal Element
+				'Close DropDown/Menu
+				If OnFocus.Type = "MenuItem" Or OnFocus.Type = "DropDownItem" Then
+					OnFocus.Parent.Minimised = 1
+					OnFocus.Parent.GuiCanvas.Visible = 0
+					OnFocus.Parent.Parent.OpenMenu = Null
+				End If
+				
+				Local Found = 0
+				'Try For Tab First
+				If Found = 0 And OnFocus.Parent.HasTabs Then
+					For Local i:Gui = EachIn OnFocus.Parent.Children
+						If i.Type = "Tab" And i.RealActive = 1 And i.RealVisible = 1 Then
+							OnFocus = i
+							Found = 1
+							Exit
+						End If
+					Next
+				End If
+				'Try For Menu
+				If Found = 0 And OnFocus.Parent.HasMenu Then
+					For Local i:Gui = Eachin OnFocus.Parent.Children
+						If i.Type = "Menu" And i.RealActive = 1 And i.RealVisible = 1 Then
+							OnFocus = i
+							Found = 1
+							Exit
+						End If
+					Next
+				End If
+				'Try For Window Button 
+				If Found = 0 And OnFocus.Parent.Type = "Window" Then
+					For Local i:Gui = EachIn OnFocus.Parent.Children
+						If i.Type = "WindowButton" And i.IsResizeButton = 0 And i.RealActive = 1 And i.RealVisible = 1 Then
+							OnFocus = i
+							Found = 1
+							Exit
+						End If
+					Next
+				End If
+				'Try for Window 
+				If Found = 0 And OnFocus.Parent.Type = "Window" Then
+					OnFocus = OnFocus.Parent
+					CurrentWindow = Null
+					Found = 1
+				End If
+				
+				If Found = 0 And OnFocus.Parent.Type <> "Screen" Then OnFocus = OnFocus.Parent
+				
+			
+			
+			End If ' Long list of elseif current element types
+			
+
+		End If 'Shift Tab Pressed
+		
+		'CLICKS
+		Local ClickUsed = 0
+		'Enter/Space Pressed On a Window that is OnFocus
+		If OnFocus <> Null And OnFocus.Type = "Window" Then
+			If KeyHit(KEY_SPACE) Or KeyHit(KEY_ENTER) Then
+				Gui.CurrentWindow = OnFocus
+				ClickUsed = 1
+				Local Found = 0
+				'Try For Element First
+				If Found = 0 Then
+					For Local i:Gui = EachIn OnFocus.Children
+						If i.Type <> "Menu" And i.Type <> "Tab" And i.Type <> "WindowButton" And i.Type <> "Label" And i.RealVisible = 1 And i.RealActive = 1 Then
+							OnFocus = i
+							Found = 1
+							Exit
+						End If
+					Next
+				End If
+				'Try For Tab
+				If Found = 0 And OnFocus.HasTabs Then
+					For Local i:Gui = EachIn OnFocus.Children
+						If i.Type = "Tab" And i.RealVisible = 1 And i.RealActive = 1 Then
+							OnFocus = i
+							Found = 1
+							Exit
+						End If
+					Next
+				End If
+				'Try For Menu
+				If Found = 0 And OnFocus.HasMenu Then
+					For Local i:Gui = EachIn OnFocus.Children
+						If i.Type = "Menu" And i.RealVisible = 1 And i.RealActive = 1 Then
+							OnFocus = i
+							Found = 1
+							Exit
+						End If
+					Next
+				End If
+				'Last try for window Button
+				If Found = 0 Then
+					For Local i:Gui = EachIn OnFocus.Children
+						If i.Type = "WindowButton" And i.IsResizeButton = 0 And i.RealVisible = 1 And i.RealActive = 1 Then
+							OnFocus = i
+							Found = 1
+							Exit
+						End If
+					Next
+				End If
+			End If
+		End If
+
+		'Enter AND OR Space
+		If OnFocus <> Null And ClickUsed = 0 Then
+			If KeyHit(KEY_SPACE) Or KeyHit(KEY_ENTER) Then
+				If OnFocus.Type <> "TextBox" And OnFocus.Type <> "TextField" And OnFocus.Type <> "Window" Then
+					OnFocus.IsClicked = 1
+					Gui.Clicked = OnFocus
+					ClickUsed = 1
+				End If
+			End If
+		Endif
+		
+		'Window Button Arrows
+		If OnFocus <> Null And OnFocus.Type = "WindowButton" Then
+			If KeyHit(KEY_RIGHT) Then
+				Local Counter, Position
+				'Find Position Of Old
+				For Local i:Gui = Eachin OnFocus.Parent.Children
+					If i = OnFocus Then
+						Position = Counter
+						Exit
+					End If
+					Counter = Counter + 1
+				Next
+				'Get The Next One
+				Local OldFound = 0
+				Counter = 0
+				For Local i:Gui = Eachin OnFocus.Parent.Children				
+					If OldFound = 1 Then
+						If i.Type = "WindowButton" And i.IsResizeButton = 0 And i.RealActive = 1 And i.RealVisible = 1 Then OnFocus = i
+						Exit
+					Endif
+					If Counter = Position Then OldFound = 1
+					Counter = Counter + 1
+				Next
+			Endif
+			
+			If KeyHit(KEY_LEFT) Then
+				Local Counter, Position
+				'Find Position Of Old
+				For Local i:Gui = Eachin OnFocus.Parent.Children
+					If i = OnFocus Then
+						Position = Counter
+						Exit
+					End If
+					Counter = Counter + 1
+				Next
+				
+				Local Found = 0
+				Counter = 0
+				If Position > 0 Then
+					While Found = 0
+						For Local i:Gui = Eachin OnFocus.Parent.Children
+							If Counter = Position - 1 Then
+								If i.Type = "WindowButton" And i.IsResizeButton = 0 And i.RealActive = 1 And i.RealVisible = 1 Then
+									OnFocus = i
+									Found = 1
+									Exit
+								Else
+									Position = Position - 1
+									Counter = 0
+									Exit
+								Endif
+							End If
+							Counter = Counter + 1
+						Next
+						If Position <= 0 Then Found = 1
+					Wend
+				End If
+			Endif
+			
+		End If
+		
+		
+		'Menu Arrows
+		If OnFocus <> Null And OnFocus.Type = "Menu" Then
+			If KeyHit(KEY_RIGHT) Then
+				Local Counter, Position
+				'Find Position Of Old
+				For Local i:Gui = Eachin OnFocus.Parent.Children
+					If i = OnFocus Then
+						Position = Counter
+						Exit
+					End If
+					Counter = Counter + 1
+				Next
+				'Get The Next One
+				Local OldFound = 0
+				Counter = 0
+				For Local i:Gui = EachIn OnFocus.Parent.Children				
+					If OldFound = 1 Then
+						If i.Type = "Menu" And i.RealActive = 1 And i.RealVisible = 1 Then OnFocus = i
+						Exit
+					Endif
+					If Counter = Position Then OldFound = 1
+					Counter = Counter + 1
+				Next
+			EndIf
+			
+			If KeyHit(KEY_LEFT) Then
+				Local Counter, Position
+				'Find Position Of Old
+				For Local i:Gui = EachIn OnFocus.Parent.Children
+					If i = OnFocus Then
+						Position = Counter
+						Exit
+					End If
+					Counter = Counter + 1
+				Next
+				Local Found = 0
+				Counter = 0
+				If Position > 0 Then
+					While Found = 0
+						For Local i:Gui = EachIn OnFocus.Parent.Children
+							If Counter = Position - 1 Then
+								If i.Type = "Menu" And i.RealActive = 1 And i.RealVisible = 1 Then
+									OnFocus = i
+									Found = 1
+									Exit
+								Else
+									Position = Position - 1
+									Counter = 0
+									Exit
+								EndIf
+							End If
+							Counter = Counter + 1
+						Next
+						If Position <= 0 Then Found = 1
+					Wend
+				End If
+			EndIf
+		End If
+		
+		
+		'MenuItem Arrows
+		If OnFocus <> Null And OnFocus.Type = "MenuItem" Then
+			If KeyHit(KEY_DOWN) Then
+				Local Counter, Position
+				'Find Position Of Old
+				For Local i:Gui = Eachin OnFocus.Parent.Children
+					If i = OnFocus Then
+						Position = Counter
+						Exit
+					End If
+					Counter = Counter + 1
+				Next
+				'Get The Next One
+				Local OldFound = 0
+				Counter = 0
+				For Local i:Gui = Eachin OnFocus.Parent.Children				
+					If OldFound = 1 Then
+						If i.Type = "MenuItem" And i.RealActive = 1 And i.RealVisible = 1 Then OnFocus = i
+						Exit
+					Endif
+					If Counter = Position Then OldFound = 1
+					Counter = Counter + 1
+				Next
+			Endif
+			
+			If KeyHit(KEY_UP) Then
+				Local Counter, Position
+				'Find Position Of Old
+				For Local i:Gui = Eachin OnFocus.Parent.Children
+					If i = OnFocus Then
+						Position = Counter
+						Exit
+					End If
+					Counter = Counter + 1
+				Next
+				Local Found = 0
+				Counter = 0
+				If Position > 0 Then
+					While Found = 0
+						For Local i:Gui = Eachin OnFocus.Parent.Children
+							If Counter = Position - 1 Then
+								If i.Type = "MenuItem" And i.RealActive = 1 And i.RealVisible = 1 Then
+									OnFocus = i
+									Found = 1
+									Exit
+								Else
+									Position = Position - 1
+									Counter = 0
+									Exit
+								EndIf
+							End If
+							Counter = Counter + 1
+						Next
+						If Position <= 0 Then Found = 1
+					Wend
+				End If
+			EndIf
+			
+			If KeyHit(KEY_RIGHT) Then
+				If OnFocus.Children.Count > 0 Then
+					If OnFocus.Parent.OpenMenu <> Null Then
+						OnFocus.Parent.OpenMenu.Minimised = 1
+						OnFocus.Parent.OpenMenu.GuiCanvas.Visible = 0
+						Gui_Menu.CloseMenu2(OnFocus.Parent.OpenMenu)
+					End If
+					OnFocus.Parent.OpenMenu = OnFocus
+					OnFocus.Minimised = 0
+					OnFocus.GuiCanvas.Visible = 1
+					For Local i:Gui = EachIn OnFocus.Children
+						If i.Type = "MenuItem" And i.Visible And i.Active Then
+							OnFocus = i
+							Exit
+						EndIf
+					Next
+	
+				EndIf
+					
+			EndIf
+			
+			If KeyHit(KEY_LEFT) Then
+				If OnFocus.Parent.Type = "MenuItem" Then
+					OnFocus.Parent.Minimised = 1
+					OnFocus.Parent.GuiCanvas.Visible = 0
+					Gui_Menu.CloseMenu2(OnFocus.Parent)
+					OnFocus.Parent.Parent.OpenMenu = Null
+					OnFocus = OnFocus.Parent
+				EndIf
+					
+			EndIf
+			
+			
+		End If
+		
+	
+		'DropDownItem Arrows
+		If OnFocus <> Null And OnFocus.Type = "DropDownItem" Then
+			If KeyHit(KEY_DOWN) Then
+				Local Counter, Position
+				'Find Position Of Old
+				For Local i:Gui = EachIn OnFocus.Parent.Children
+					If i = OnFocus Then
+						Position = Counter
+						Exit
+					End If
+					Counter = Counter + 1
+				Next
+				'Get The Next One
+				Local OldFound = 0
+				Counter = 0
+				For Local i:Gui = EachIn OnFocus.Parent.Children				
+					If OldFound = 1 Then
+						If i.Type = "DropDownItem" And i.RealActive = 1 And i.RealVisible = 1 Then OnFocus = i
+						Exit
+					EndIf
+					If Counter = Position Then OldFound = 1
+					Counter = Counter + 1
+				Next
+			EndIf
+			
+			If KeyHit(KEY_UP) Then
+				Local Counter, Position
+				'Find Position Of Old
+				For Local i:Gui = EachIn OnFocus.Parent.Children
+					If i = OnFocus Then
+						Position = Counter
+						Exit
+					End If
+					Counter = Counter + 1
+				Next
+				Local Found = 0
+				Counter = 0
+				If Position > 0 Then
+					While Found = 0
+						For Local i:Gui = EachIn OnFocus.Parent.Children
+							If Counter = Position - 1 Then
+								If i.Type = "DropDownItem" And i.RealActive = 1 And i.RealVisible = 1 Then
+									OnFocus = i
+									Found = 1
+									Exit
+								Else
+									Position = Position - 1
+									Counter = 0
+									Exit
+								EndIf
+							End If
+							Counter = Counter + 1
+						Next
+						If Position <= 0 Then Found = 1
+					Wend
+				End If
+			EndIf
+		End If
+		
+		
+		'ListboxItem Arrows
+		If OnFocus <> Null And OnFocus.Type = "ListboxItem" Then
+			If KeyHit(KEY_DOWN) Then
+				ArrowHit = 1
+				Local Counter, Position
+				'Find Position Of Old
+				For Local i:Gui = EachIn OnFocus.Parent.Children
+					If i = OnFocus Then
+						Position = Counter
+						Exit
+					End If
+					Counter = Counter + 1
+				Next
+				'Get The Next One
+				Local OldFound = 0
+				Counter = 0
+				For Local i:Gui = EachIn OnFocus.Parent.Children				
+					If OldFound = 1 Then
+						If i.Type = "ListboxItem" And i.RealActive = 1 And i.RealVisible = 1 Then OnFocus = i
+						Exit
+					EndIf
+					If Counter = Position Then OldFound = 1
+					Counter = Counter + 1
+				Next
+			EndIf
+			
+			If KeyHit(KEY_UP) Then
+				ArrowHit = 1
+				Local Counter, Position
+				'Find Position Of Old
+				For Local i:Gui = EachIn OnFocus.Parent.Children
+					If i = OnFocus Then
+						Position = Counter
+						Exit
+					End If
+					Counter = Counter + 1
+				Next
+				Local Found = 0
+				Counter = 0
+				If Position > 0 Then
+					While Found = 0
+						For Local i:Gui = EachIn OnFocus.Parent.Children
+							If Counter = Position - 1 Then
+								If i.Type = "ListboxItem" And i.RealActive = 1 And i.RealVisible = 1 Then
+									OnFocus = i
+									Found = 1
+									Exit
+								Else
+									Position = Position - 1
+									Counter = 0
+									Exit
+								EndIf
+							End If
+							Counter = Counter + 1
+						Next
+						If Position <= 0 Then Found = 1
+					Wend
+				End If
+			EndIf
+		End If
+		
+		'Tab Arrows
+		If OnFocus <> Null And OnFocus.Type = "Tab" Then
+			If KeyHit(KEY_RIGHT) Then
+				Local Counter, Position
+				'Find Position Of Old
+				For Local i:Gui = EachIn OnFocus.Parent.Children
+					If i = OnFocus Then
+						Position = Counter
+						Exit
+					End If
+					Counter = Counter + 1
+				Next
+				'Get The Next One
+				Local OldFound = 0
+				Counter = 0
+				For Local i:Gui = EachIn OnFocus.Parent.Children				
+					If OldFound = 1 Then
+						If i.Type = "Tab" And i.RealActive = 1 And i.RealVisible = 1 Then
+							OnFocus = i
+							OnFocus.IsClicked = 1
+							Clicked = OnFocus
+							Exit
+						End If
+						
+					EndIf
+					If Counter = Position Then OldFound = 1
+					Counter = Counter + 1
+				Next
+			EndIf
+			
+			If KeyHit(KEY_LEFT) Then
+				Local Counter, Position
+				'Find Position Of Old
+				For Local i:Gui = EachIn OnFocus.Parent.Children
+					If i = OnFocus Then
+						Position = Counter
+						Exit
+					End If
+					Counter = Counter + 1
+				Next
+				
+				Local Found = 0
+				Counter = 0
+				If Position > 0 Then
+					While Found = 0
+						For Local i:Gui = EachIn OnFocus.Parent.Children
+							If Counter = Position - 1 Then
+								If i.Type = "Tab" And i.RealActive = 1 And i.RealVisible = 1 Then
+									OnFocus = i
+									OnFocus.IsClicked = 1
+									Gui.Clicked = OnFocus
+									Found = 1
+									Exit
+								Else
+									Position = Position - 1
+									Counter = 0
+									Exit
+								EndIf
+							End If
+							Counter = Counter + 1
+						Next
+						If Position <= 0 Then Found = 1
+					Wend
+				End If
+			EndIf
+			
+			
+			
+		End If
+		
+		Local UpHit = 0, DownHit = 0
+		'Table Arrows
+		If OnFocus <> Null And OnFocus.Type = "TableCell" Then
+			'If KeyHit(KEY_RIGHT) Then
+			'	ArrowHit = 1
+			'	Gui.ActiveTextbox = Null
+			'	Local Counter, Position
+			'	'Find Position Of Old
+			'	For Local i:Gui = EachIn OnFocus.Parent.Children
+			'		If i = OnFocus Then
+			'			Position = Counter
+			'			Exit
+			'		End If
+			'		Counter = Counter + 1
+			'	Next
+			'	'Get The Next One
+			'	Local OldFound = 0, Found = 0
+			'	Counter = 0
+			'	For Local i:Gui = EachIn OnFocus.Parent.Children				
+			'		If OldFound = 1 And OnFocus.Children.First.Type <> "TextField" Then
+			'			If i.Type = "TableCell" And i.IsHeader = 0 And i.RealActive = 1 And i.RealVisible = 1 Then
+			'				OnFocus = i
+			'				Found = 1
+			'				Exit
+			'			End If
+			'		EndIf
+			'		If Counter = Position Then OldFound = 1
+			'		Counter = Counter + 1
+			'	Next
+			'	If Found = 0 Then
+			'		For Local i:Gui = EachIn OnFocus.Parent.Children
+			'			If i.Type = "TableCell" And i.IsHeader = 0 And i.RealActive = 1 And i.RealVisible = 1 And OnFocus.Children.First.Type <> "TextField" Then
+			'				OnFocus = i
+			'				OnFocus.Parent.VScroll.Value = 0
+			'				Exit
+			'				
+			'			EndIf
+			'		Next
+			'	
+			'	EndIf
+			'EndIf
+			'
+			'If KeyHit(KEY_LEFT) Then
+			'	ArrowHit = 1
+			'	Gui.ActiveTextbox = Null
+			'	Local Counter, Position
+			'	'Find Position Of Old
+			'	For Local i:Gui = EachIn OnFocus.Parent.Children
+			'		If i = OnFocus Then
+			'			Position = Counter
+			'			Exit
+			'		End If
+			'		Counter = Counter + 1
+			'	Next
+			'	
+			'	Local Found = 0
+			'	Counter = 0
+			'	If Position > 0 Then
+			'		While Found = 0
+			'			For Local i:Gui = EachIn OnFocus.Parent.Children
+			'				If Counter = Position - 1 Then
+			'					If i.Type = "TableCell" And i.IsHeader = 0 And i.RealActive = 1 And i.RealVisible = 1 And OnFocus.Children.First.Type <> "TextField" Then
+			'						OnFocus = i
+			'						Found = 1
+			'						Exit
+			'					Else
+			'						Position = Position - 1
+			'						Counter = 0
+			'						Exit
+			'					EndIf
+			'				End If
+			'				Counter = Counter + 1
+			'			Next
+			'			If Position <= 0 Then Exit
+			'		Wend
+			'	End If
+			'	
+			'	If Found = 0 Then
+			'		Position = OnFocus.Parent.Children.Count
+			'		While Found = 0
+			'			For Local i:Gui = EachIn OnFocus.Parent.Children
+			'				If Counter = Position - 1 Then
+			'					If i.Type = "TableCell" And i.IsHeader = 0 And i.RealActive = 1 And i.RealVisible = 1 And OnFocus.Children.First.Type <> "TextField" Then
+			'						OnFocus = i
+			'						Found = 1
+			'						Exit
+			'					Else
+			'						Position = Position - 1
+			'						Counter = 0
+			'						Exit
+			'					EndIf
+			'				End If
+			'				Counter = Counter + 1
+			'			Next
+			'			If Position <= 0 Then Exit
+			'		Wend
+			'	End If
+			'	
+			'EndIf
+			
+			
+			If KeyHit(KEY_DOWN) Then
+				DownHit = 1
+				ArrowHit = 1
+				Gui.ActiveTextbox = Null
+				Local Counter, Position
+				'Find Position Of Old
+				For Local i:Gui = EachIn OnFocus.Parent.Children
+					If i = OnFocus Then
+						Position = Counter
+						Exit
+					End If
+					Counter = Counter + 1
+				Next
+				'Get The Next One
+				Local OldFound = 0, Found = 0
+				Position = Position + OnFocus.Parent.Colomns - 1
+				Counter = 0
+				For Local i:Gui = EachIn OnFocus.Parent.Children				
+					If OldFound = 1 Then
+						If i.Type = "TableCell" And i.IsHeader = 0 And i.RealActive = 1 And i.RealVisible = 1 Then
+							OnFocus = i
+							Found = 1
+							Exit
+						End If
+					EndIf
+					If Counter = Position Then OldFound = 1
+					Counter = Counter + 1
+				Next
+				If Found = 1 Then Gui.CursorLocation = OnFocus.Children.First.Text.Length
+			EndIf
+			
+			If KeyHit(KEY_UP) Then
+				UpHit = 1
+				ArrowHit = 1
+				Gui.ActiveTextbox = Null
+				Local Counter, Position
+				'Find Position Of Old
+				For Local i:Gui = EachIn OnFocus.Parent.Children
+					If i = OnFocus Then
+						Position = Counter
+						Exit
+					End If
+					Counter = Counter + 1
+				Next
+				
+				Local Found = 0
+				Counter = 0
+				Position = Position - OnFocus.Parent.Colomns + 1
+				If Position > 0 Then
+					While Found = 0
+						For Local i:Gui = EachIn OnFocus.Parent.Children
+							If Counter = Position - 1 Then
+								If i.Type = "TableCell" And i.IsHeader = 0 And i.RealActive = 1 And i.RealVisible = 1 Then
+									OnFocus = i
+									Found = 1
+									Exit
+								Else
+									Position = Position - 1
+									Counter = 0
+									Exit
+								EndIf
+							End If
+							Counter = Counter + 1
+						Next
+						If Position <= 0 Then Exit
+					Wend
+				End If
+				If Found = 0 Then OnFocus.Parent.VScroll.Value = 0
+				If Found = 1 Then Gui.CursorLocation = OnFocus.Children.First.Text.Length
+				
+			EndIf
+		End If
+		
+		'Scrollbar Horisontal / Slider
+		If OnFocus <> Null Then
+			If OnFocus.Type = "HScrollbar" Or OnFocus.Type = "Slider" Then
+				Local Stp = OnFocus.Stp
+				If Stp <= 0 Then Stp = 1
+				
+				If KeyHit(KEY_LEFT) Then
+					OnFocus.Value = OnFocus.Value - Stp
+				End If
+				
+				If KeyHit(KEY_RIGHT) Then
+					OnFocus.Value = OnFocus.Value + Stp
+				End If
+								
+				If KeyDown(KEY_LEFT) And KeyIsdown = 0 Then
+					KeyIsdown = 1
+					KeydownTimer = Millisecs() +700
+				ElseIf KeyDown(KEY_LEFT) And KeyIsdown = 1 Then
+					If KeydownTimer < Millisecs() Then
+						OnFocus.Value = OnFocus.Value - Stp
+						KeydownTimer = Millisecs() +50
+					End If
+				ElseIf KeyDown(KEY_RIGHT) And KeyIsdown = 0 Then
+					KeyIsdown = 1
+					KeydownTimer = Millisecs() +700
+				ElseIf KeyDown(KEY_RIGHT) And KeyIsdown = 1 Then
+					If KeydownTimer < Millisecs() Then
+						OnFocus.Value = OnFocus.Value + Stp
+						KeydownTimer = Millisecs() +50
+					End If
+				Else
+					KeyIsdown = 0
+				End If
+			End If
+		End If
+		
+		'Scrollbar Vertical / Slider
+		If OnFocus <> Null Then
+			If OnFocus.Type = "VScrollbar" Then
+				Local Stp = OnFocus.Stp
+				If Stp <= 0 Then Stp = 1
+				
+				If KeyHit(KEY_UP) Then
+					OnFocus.Value = OnFocus.Value - Stp
+				End If
+				
+				If KeyHit(KEY_DOWN) Then
+					OnFocus.Value = OnFocus.Value + Stp
+				End If
+								
+				If KeyDown(KEY_UP) And KeyIsdown = 0 Then
+					KeyIsdown = 1
+					KeydownTimer = Millisecs() +700
+				ElseIf KeyDown(KEY_UP) And KeyIsdown = 1 Then
+					If KeydownTimer < Millisecs() Then
+						OnFocus.Value = OnFocus.Value - Stp
+						KeydownTimer = Millisecs() +50
+					End If
+				ElseIf KeyDown(KEY_DOWN) And KeyIsdown = 0 Then
+					KeyIsdown = 1
+					KeydownTimer = Millisecs() +700
+				ElseIf KeyDown(KEY_DOWN) And KeyIsdown = 1 Then
+					If KeydownTimer < Millisecs() Then
+						OnFocus.Value = OnFocus.Value + Stp
+						KeydownTimer = Millisecs() +50
+					End If
+				Else
+					KeyIsdown = 0
+				End If
+			End If
+		End If
+		
+		'TableScrollbar adjust
+		If OnFocus <> Null And OnFocus.Type = "TableCell" Then
+			If TabHit = 1 Or OnFocus.IsClicked Or ArrowHit = 1 Then
+				If OnFocus.RealX < OnFocus.Parent.RealX Then OnFocus.Parent.HScroll.Value = OnFocus.Parent.HScroll.Value - (OnFocus.Parent.RealX - OnFocus.RealX)
+				If OnFocus.RealY < OnFocus.Parent.RealY Then OnFocus.Parent.VScroll.Value = OnFocus.Parent.VScroll.Value - (OnFocus.Parent.RealY - OnFocus.RealY)
+			
+				If OnFocus.RealX + OnFocus.W > OnFocus.Parent.RealX + OnFocus.Parent.W - (OnFocus.Parent.VScroll.Visible * OnFocus.Parent.VScroll.W) Then OnFocus.Parent.HScroll.Value = OnFocus.Parent.HScroll.Value + ( (OnFocus.RealX + OnFocus.W) - (OnFocus.Parent.RealX + OnFocus.Parent.W - ( (OnFocus.Parent.VScroll.Visible * OnFocus.Parent.VScroll.W))))
+				If OnFocus.RealY + OnFocus.H > OnFocus.Parent.RealY + OnFocus.Parent.H - (OnFocus.Parent.HScroll.Visible * OnFocus.Parent.HScroll.H) Then OnFocus.Parent.VScroll.Value = OnFocus.Parent.VScroll.Value + ( (OnFocus.RealY + OnFocus.H) - (OnFocus.Parent.RealY + OnFocus.Parent.H - ( (OnFocus.Parent.HScroll.Visible * OnFocus.Parent.HScroll.H))))
+			
+			
+				If OnFocus.Parent.HScroll.Value < OnFocus.Parent.HScroll.Minimum Then OnFocus.Parent.HScroll.Value = OnFocus.Parent.HScroll.Minimum
+				If OnFocus.Parent.HScroll.Value > OnFocus.Parent.HScroll.Maximum Then OnFocus.Parent.HScroll.Value = OnFocus.Parent.HScroll.Maximum
+				If OnFocus.Parent.VScroll.Value < OnFocus.Parent.VScroll.Minimum Then OnFocus.Parent.VScroll.Value = OnFocus.Parent.VScroll.Minimum
+				If OnFocus.Parent.VScroll.Value > OnFocus.Parent.VScroll.Maximum Then OnFocus.Parent.VScroll.Value = OnFocus.Parent.VScroll.Maximum
+			
+			End If
+		End If
+		
+		'ListBox Scroll adjust
+		If OnFocus <> Null And OnFocus.Type = "ListboxItem" Then
+			If OnFocus.IsClicked Or ArrowHit = 1 Then
+				
+				If OnFocus.RealY < OnFocus.Parent.RealY Then OnFocus.Parent.ListboxScrollbar.Value = OnFocus.Parent.ListboxScrollbar.Value - (OnFocus.Parent.RealY - OnFocus.RealY)
+			
+				If OnFocus.RealY + OnFocus.H > OnFocus.Parent.RealY + OnFocus.Parent.H Then OnFocus.Parent.ListboxScrollbar.Value = OnFocus.Parent.ListboxScrollbar.Value + ( (OnFocus.RealY + OnFocus.H) - (OnFocus.Parent.RealY + OnFocus.Parent.H))
+			
+			
+				If OnFocus.Parent.ListboxScrollbar.Value < OnFocus.Parent.ListboxScrollbar.Minimum Then OnFocus.Parent.ListboxScrollbar.Value = OnFocus.Parent.ListboxScrollbar.Minimum
+				If OnFocus.Parent.ListboxScrollbar.Value > OnFocus.Parent.ListboxScrollbar.Maximum Then OnFocus.Parent.ListboxScrollbar.Value = OnFocus.Parent.ListboxScrollbar.Maximum
+			
+			End If
+		End If
+		
+	End Function
+	
+	Function DrawOnFocus(i:Gui)
+		SetScissor(i.DrawingX, i.DrawingY, i.DrawingW, i.DrawingH)
+		SetColor(0, 0, 0)
+		
+		DrawDottedLine(i.RealX, i.RealY, i.RealX + i.W - 1, i.RealY)
+		DrawDottedLine(i.RealX + i.W - 1, i.RealY, i.RealX + i.W - 1, i.RealY + i.H - 1)
+		DrawDottedLine(i.RealX, i.RealY + i.H - 1, i.RealX + i.W - 1, i.RealY + i.H - 1)
+		DrawDottedLine(i.RealX, i.RealY, i.RealX, i.RealY + i.H - 1)
+		
+		SetColor(255, 255, 255)
+		SetScissor(i.DrawingX, i.DrawingY, i.DrawingW, i.DrawingH)
+	End Function
+	
+
+	Function DrawDottedLine(X1, Y1, X2, Y2)
+		'Horisontal
+		If X2 > X1 Then
+			Local On = 1
+			For Local X = X1 To X2
+				If On = 1 Then
+					DrawRect(X, Y1, 1, 1)
+					On = 0
+				Else
+					On = 1
+				End If
+			Next
+			
+		Else
+			Local On = 1
+			For Local Y = Y1 To Y2
+				If On = 1 Then
+					DrawRect(X1, Y, 1, 1)
+					
+					On = 0
+				Else
+					On = 1
+				End If
+			Next
+		
+		End If
+	End Function
+	Function SetFocus(Element:Gui)
+		OnFocus = Element
+	End Function
+	
+	
+	
+	'Table Function
+	Method TableAddHeader(CellX, CellY, Text:String)
+	 	If Type = "Table"
+			Local Location = (CellY * Colomns) + CellX
+			Local LocationCounter
+			For Local i:Gui = EachIn Self.Children
+				If LocationCounter = Location Then
+					i.IsHeader = 1
+					i.Text = Text
+					Exit
+				End If
+				LocationCounter = LocationCounter + 1
+			Next
+		End If
+	End Method
+	
+	Method TableAddText(CellX, CellY, Text:String, Numbers = 1, Letters = 1, Symbols = 1, MaxLength = 0)
+	 	If Type = "Table"
+			Local Location = (CellY * Colomns) + CellX
+			Local LocationCounter
+			For Local i:Gui = EachIn Self.Children
+				If LocationCounter = Location Then
+					i.Children = New List<Gui>
+					Local N:Gui = Gui.CreateTextField(0, 0, CellWidth, CellHeight, i, Text, Numbers, Letters, Symbols, MaxLength)
+					N.IsCell = 1
+				End If
+				LocationCounter = LocationCounter + 1
+			Next
+		End If
+	End Method
+
+
+	Method TableAddDropDown(CellX, CellY, Text:String)
+	 	If Type = "Table"
+			Local Location = (CellY * Colomns) + CellX
+			Local LocationCounter
+			For Local i:Gui = EachIn Self.Children
+				If LocationCounter = Location Then
+					i.Children = New List<Gui>
+					Local N:Gui = Gui.CreateDropDown(0, 0, CellWidth, CellHeight, i, Text)
+					N.IsCell = 1
+				End If
+				LocationCounter = LocationCounter + 1
+			Next
+		End If
+	End Method
+
+	Method TableAddDropDownItem(CellX, CellY, Text:String, Value = 0)
+	 	If Type = "Table"
+			Local Location = (CellY * Colomns) + CellX
+			Local LocationCounter
+			For Local i:Gui = EachIn Self.Children
+				If LocationCounter = Location Then
+					For Local ii:Gui = EachIn i.Children
+						Local N:Gui = Gui.CreateDropDownItem(Text, ii, Value)
+					Next
+				End If
+				LocationCounter = LocationCounter + 1
+			Next
+		End If
+	End Method
+
+	Method TableAddTick(CellX, CellY, Height, Text:String, StartValue = 0)
+	 	If Type = "Table"
+			Local Location = (CellY * Colomns) + CellX
+			Local LocationCounter
+			For Local i:Gui = EachIn Self.Children
+				If LocationCounter = Location Then
+					i.Children = New List<Gui>
+					Local xx = (CellWidth - Height) / 2
+					Local yy = (CellHeight - Height) / 2
+					If Text <> "" Then xx = 5
+					Local N:Gui = Gui.CreateTickbox(xx, yy, Height, Text, i, StartValue)
+					N.IsCell = 1
+				End If
+				LocationCounter = LocationCounter + 1
+			Next
+		End If
+	End Method
+
+	
+	Method TableAddSliderButton(CellX, CellY, Height, Width, Text1:String, Text2:String, StartValue = 0)
+	 	If Type = "Table"
+			Local Location = (CellY * Colomns) + CellX
+			Local LocationCounter
+			For Local i:Gui = EachIn Self.Children
+				If LocationCounter = Location Then
+					i.Children = New List<Gui>
+					Local N:Gui = Gui.CreateSlideButton(CellX, CellY, Height, Width, Text1, Text2, i, StartValue)
+					N.IsCell = 1
+				End If
+				LocationCounter = LocationCounter + 1
+			Next
+		End If
+	End Method
+		
+	
+	Method TableGetText:String(CellX, CellY)
+		If Type = "Table"
+			Local Location = (CellY * Colomns) + CellX
+			Local LocationCounter
+			For Local i:Gui = EachIn Self.Children
+				If LocationCounter = Location Then
+					If i.Children.Count > 0 Then
+						Return i.Children.First.Text
+					End If
+				End If
+				LocationCounter = LocationCounter + 1
+			Next
+		End If
+	End Method
+	
+	Method TableGetValue(CellX, CellY)
+		If Type = "Table"
+			Local Location = (CellY * Colomns) + CellX
+			Local LocationCounter
+			For Local i:Gui = EachIn Self.Children
+				If LocationCounter = Location Then
+					If i.Children.Count > 0 Then
+						Return i.Children.First.Value
+					End If
+				End If
+				LocationCounter = LocationCounter + 1
+			Next
+		End If
+	End Method
+	
+	
+	
+End Class
+

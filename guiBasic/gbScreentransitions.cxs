@@ -1,0 +1,82 @@
+Import guiBasic
+
+Class Gui_ScreenTransitions Extends Gui
+	Global OldScreen:Image
+	Global NewScreen:Image
+	Global Transitioning = 0
+	Global Style
+	Global Counter:Float
+	Global ToScreen:Gui
+	
+	Function DrawTransition()
+		If Style = 1 Then FadeEffect()
+		If Style = 2 Then SlideEffect()
+		If Style = 3 Then TurnEffect()
+		If Style = 4 Then ZoomEffect()
+	End Function
+	
+	Function CopyScreen:Image()
+		Local W = DeviceWidth()
+		Local H = DeviceHeight()
+		Local FastImage:Image = CreateImage(W, H)
+		SetScissor(0, 0, W, H)
+		'Setup Data Arays
+		Local ReturnPixels:Int[] = New Int[W * H]
+		'Draw To Array
+		ReadPixels(ReturnPixels, 0, 0, W, H)
+		FastImage.WritePixels(ReturnPixels, 0, 0, W, H)
+		Return FastImage
+	End Function
+	
+	Function FadeEffect()
+		SetAlpha(1.0 - Counter)
+		DrawImage(OldScreen, 0, 0)
+		SetAlpha(Counter)
+		DrawImage(NewScreen, 0, 0)
+		Counter = Counter + (Gui.AnimatedSpeed / 1000.0)
+		If Counter >= 1 Then
+			Counter = 0
+			Transitioning = 0
+		Endif
+	End Function
+	
+	Function SlideEffect()
+		SetAlpha(1 - (Counter / DeviceWidth()))
+		DrawImage(OldScreen, 0 - Counter, 0)
+		SetAlpha( (Counter / DeviceWidth()))
+		DrawImage(NewScreen, DeviceWidth() -Counter, 0)
+		Counter = Counter + (Gui.AnimatedSpeed / 1.5)
+		If Counter >= DeviceWidth() Then
+			Counter = 0
+			Transitioning = 0
+		Endif
+	End Function
+	
+	Function TurnEffect()
+		SetAlpha(1 - (Counter / 90))
+		DrawImage(OldScreen, 0, 0, -Counter, 1, 1)
+		SetAlpha( (Counter / 90))
+		DrawImage(NewScreen, 0, 0, 90 - Counter, 1, 1)
+		Counter = Counter + (Gui.AnimatedSpeed / 10.0)
+		If Counter >= 90 Then
+			Counter = 0
+			Transitioning = 0
+		Endif
+	End Function
+	
+	Function ZoomEffect()
+		OldScreen.SetHandle(DeviceWidth() / 2, DeviceHeight() / 2)
+		NewScreen.SetHandle(DeviceWidth() / 2, DeviceHeight() / 2)
+		
+		SetAlpha( (1 - Counter))
+		DrawImage(OldScreen, DeviceWidth() / 2.0, DeviceHeight() / 2.0, 0, 1 - Counter, 1 - Counter)
+		SetAlpha( (Counter))
+		DrawImage(NewScreen, DeviceWidth() / 2.0, DeviceHeight() / 2.0, 0, 2 - Counter, 2 - Counter)
+		Counter = Counter + (Gui.AnimatedSpeed / 800.0)
+		If Counter >= 1 Then
+			Counter = 0
+			Transitioning = 0
+		Endif
+	End Function
+	
+End Class
