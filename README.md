@@ -1,7 +1,6 @@
-# guiBasic
-##GUI for CerberusX
+# guiBasic - GUI for CerberusX
 
-![guiBasic screenshot](screenshot of examples.jpg)\
+![](https://github.com/zomagic/guiBasic/edit/main/screenshot.jpg)
 
 Unzip the downloaded file and copy the *guiBasic* folder into your CerberusX *modules_ext* folder
 
