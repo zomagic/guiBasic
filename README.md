@@ -5,7 +5,7 @@
 - [x] Add support to Cerberus X Font by **ZoMagic** in 2022 :tada:
 
 ![](https://github.com/zomagic/guiBasic/blob/main/guiBasic.gif)
-![](https://github.com/zomagic/guiBasic/blob/main/gscreenshot.jpg)
+![](https://github.com/zomagic/guiBasic/blob/main/screenshot%20of%20examples.jpgg)
 
 Unzip the downloaded file and copy the *guiBasic* folder into your CerberusX *modules_ext* folder
 
