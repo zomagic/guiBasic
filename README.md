@@ -4,7 +4,7 @@
 - [x] It was converted from MonkeyX to CerberusX by **Memzen** in 2019
 - [x] Add support to Cerberus X Font by **ZoMagic** in 2022 :tada:
 
-![](https://github.com/zomagic/guiBasic/blob/main/screenshot%20of%20examples.jpg)
+![](https://github.com/zomagic/guiBasic/blob/main/guiBasic.gif)
 
 Unzip the downloaded file and copy the *guiBasic* folder into your CerberusX *modules_ext* folder
 
