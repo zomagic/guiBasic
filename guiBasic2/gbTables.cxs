@@ -1,0 +1,213 @@
+Import guiBasic2
+
+Class Gui_Table Extends Gui
+
+	Method New(X, Y, W, H, Parent:Gui, Rows, Colomns, CellWidth, CellHeight, DrawGrid = 1)
+		Self.Type = "Table"
+		Self.X = X
+		Self.Y = Y
+		Self.W = W
+		Self.H = H
+		Self.Rows = Rows
+		Self.Colomns = Colomns
+		Self.CellWidth = CellWidth
+		Self.CellHeight = CellHeight
+		Self.DrawGrid = DrawGrid
+		Self.Parent = Parent
+		Self.Parent.Children.AddLast(Self)
+		Self.Children = New List<Gui>
+		Self.VScroll = Gui.CreateVScrollbar(W - 15, 0, 15, H, 0, 20, Self, 0, 0)
+		Self.HScroll = Gui.CreateHScrollbar(0, H - 15, W - 15, 15, 0, 20, Self, 0, 0)
+		Self.VScroll.IsHeader = 1
+		Self.VScroll.PlusButton.IsHeader = 1
+		Self.VScroll.MinusButton.IsHeader = 1
+		Self.VScroll.SliderButton.IsHeader = 1
+		Self.HScroll.IsHeader = 1
+		Self.HScroll.PlusButton.IsHeader = 1
+		Self.HScroll.MinusButton.IsHeader = 1
+		Self.HScroll.SliderButton.IsHeader = 1
+		
+		ZOrder(Self.Parent)
+		Self.CreateChildren
+	End Method
+	
+	
+	Method Draw2()
+		'Boarder
+		SetColor(150, 150, 150)
+		DrawRect(RealX, RealY, W, H)
+		SetColor(255, 255, 255)
+		DrawRect(RealX + 1, RealY + 1, W - 2, H - 2)
+		SetColor(255, 255, 255)
+		
+		'Grid
+		If DrawGrid = 1
+			SetColor(210, 210, 210)
+			For Local x = 0 To Colomns
+				DrawLine(RealX + 1 + (x * CellWidth) - HScroll.Value, RealY + 1 - VScroll.Value, RealX + 1 + (x * CellWidth) - HScroll.Value, RealY + 1 - VScroll.Value + (Rows * CellHeight))
+			Next
+			
+			For Local y = 0 To Rows
+				DrawLine(RealX + 1 - HScroll.Value, RealY + 1 - VScroll.Value + (y * CellHeight), RealX + 1 + - HScroll.Value + (Colomns * CellWidth), RealY + 1 - VScroll.Value + (y * CellHeight))
+			Next
+			
+		EndIf
+		
+	End Method
+	
+	
+	Method Update2()
+		
+		'UpdateCanvas
+		CanvasX = RealX + 1
+		CanvasY = RealY + 1
+		CanvasW = W - 2
+		CanvasH = H - 2
+		
+		VisibleChildNumber = 0
+		
+		'Update Scrollbars
+		VScroll.X = CanvasW - VScroll.W
+		VScroll.Y = 0
+		VScroll.H = CanvasH
+		HScroll.X = 0
+		HScroll.Y = CanvasH - HScroll.H
+		
+		
+		
+		'Horiz
+		HScroll.W = CanvasW
+		If VScroll.Visible Then HScroll.W = HScroll.W - VScroll.W
+		If CellWidth * Colomns > CanvasW + (VScroll.Visible * VScroll.W) Then
+			HScroll.Visible = 1
+			HScroll.Minimum = 0
+			HScroll.Maximum = (CellWidth * Colomns) - CanvasW
+		Else
+			HScroll.Visible = 0
+			HScroll.Value = 0
+		End If
+		
+		'Vert
+		If CellHeight * (Rows+1) > CanvasH + (HScroll.Visible * HScroll.H) Then
+			VScroll.Visible = 1
+			VScroll.Minimum = 0
+			VScroll.Maximum = (CellHeight * Rows) - CanvasH
+		Else
+			VScroll.Visible = 0
+			VScroll.Value = 0
+		End If
+		
+		If VScroll.Visible Then HScroll.Maximum = HScroll.Maximum + VScroll.W
+		If HScroll.Visible Then VScroll.Maximum = VScroll.Maximum + HScroll.H
+		
+		CellXCounter = 0
+		CellYCounter = 0
+		
+		If Self.IsClicked Then
+			For Local i:Gui = Eachin Children
+				If i.Type = "TableCell" And i.IsHeader = 0 And i.RealActive = 1 And i.IsHeader = 0 Then
+					VScroll.Value = 0
+					HScroll.Value = 0
+					OnFocus = i
+					If i.Children.First.Type = "TextField" Then Gui.CursorLocation = i.Children.First.Text.Length
+					Exit
+				Endif
+			Next
+		Endif
+		
+	End Method
+	
+	
+	Method CreateChildren()
+		For Local y = 0 To Rows - 1
+			For Local x = 0 To Colomns - 1
+				New Table_Cell(x * CellWidth, y * CellHeight, CellWidth, CellHeight, Self)
+			Next
+		Next
+		
+	End Method
+	
+	
+End Class
+
+
+Class Table_Cell Extends Gui
+	Method New(X, Y, W, H, Parent:Gui)
+		Self.Type = "TableCell"
+		Self.X = X
+		Self.Y = Y
+		Self.W = W
+		Self.H = H
+		Self.Parent = Parent
+		Self.Parent.Children.AddLast(Self)
+		Self.Children = New List<Gui>
+		ZOrder(Self.Parent)
+	End Method
+	
+		
+	Method Update2()
+		
+		Self.W = Parent.CellWidth
+		Self.H = Parent.CellHeight
+		Self.X = (Parent.CellWidth * Parent.CellXCounter) - Parent.HScroll.Value
+		Self.Y = (Parent.CellHeight * Parent.CellYCounter) - Parent.VScroll.Value
+		
+		Parent.CellXCounter = Parent.CellXCounter + 1
+		If Parent.CellXCounter >= Parent.Colomns Then
+			Parent.CellXCounter = 0
+			Parent.CellYCounter = Parent.CellYCounter + 1
+		End If
+		
+		If Self.IsClicked Then
+			For Local i:Gui = Eachin Self.Children
+				If i.RealActive = 1 And i.RealVisible = 1 Then
+					If i.Type = "Tickbox" Then
+						If i.Value = 0 Then
+							i.Value = 1
+						Else
+							i.Value = 0
+						Endif
+						Exit
+					Endif
+					
+					If i.Type = "DropDown" Then
+						If i.Minimised = 1 Then
+							i.Minimised = 0
+							i.GuiCanvas.Visible = 1
+							For Local ii:Gui = Eachin i.Children
+								If ii.Type = "DropDownItem" And ii.Visible = 1 And ii.Active = 1 Then
+									OnFocus = ii
+									Exit
+								Endif
+							Next
+						Else
+							i.Minimised = 1
+							i.GuiCanvas.Visible = 0
+						End If
+						Exit
+					End If	
+					
+				End If
+			Next
+		End If
+		
+	End Method
+	
+	Method Draw2()
+		SetScissorWithinSelf(0,0,W,H)
+		If IsHeader = 1 Then
+			SetColor(170, 170, 170)
+			DrawRect(RealX, RealY, W, H)
+			SetColor(210, 210, 210)
+			DrawLine(RealX, RealY + H, RealX + W, RealY + H)
+			DrawLine(RealX + W, RealY, RealX + W, RealY + H)
+			SetColor(255, 255, 255)
+			SetFont(NormalFontInv)
+			DrawText(Text, RealX + (W - TextWidth(Text)) / 2, RealY + (H - TextHeight(Text)) / 2)			
+		Endif
+		
+		
+	End Method
+	
+End Class
+

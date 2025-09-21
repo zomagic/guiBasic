@@ -1,0 +1,109 @@
+Import guiBasic2
+
+Class Gui_Label Extends Gui
+	
+	Field OldAlign, OldBoarder
+	
+	Method New(X, Y, Text:String, Parent:Gui, Align = 0, Boarder = 0, FLOPS = 0)
+		Self.Type = "Label"
+		Self.X = X
+		Self.Y = Y
+		SetFont(NormalFont)
+		'######
+		Self.W = TextWidth(Text)
+		Self.H = TextHeight(Text)
+		If Boarder > 0 Then
+			Self.W = Self.W + 4
+			Self.H = Self.H + 4
+		End If
+		
+		Self.Align = Align
+		OldAlign = Self.Align
+		OldBoarder = Self.Boarder
+		
+		Self.Boarder = Boarder
+		Self.Text = Text
+		Self.Parent = Parent
+		Self.Parent.Children.AddLast(Self)
+		Self.Children = New List<Gui>
+		If FLOPS = 0 Then ZOrder(Self.Parent)
+		PartOfFileOperations = FLOPS
+	End Method
+	
+	
+	Method Draw2()
+		
+		If Self.IsFlops = 1 Then
+			SetScissor(Gui.FileOperations.File_Window.RealX + 5, Gui.FileOperations.File_Window.RealY + TitleBarHeight + 5, 390, 40)
+		End If
+
+		'-- problem 2019-02-08
+		'-- the Html5 build correctly draws the outline around a label element but
+		'-- the Glfw3 build does not draw the right and bottom lines because of this
+		'-- SetScissor() command in Method DrawElements() in the file guiBasic.cxs:
+		'-- SetScissor(DrawingX, DrawingY, DrawingW, DrawingH)
+			
+		'-- if the following command is added:
+		'-- SetScissor(DrawingX, DrawingY, DrawingW + 1 , DrawingH + 1 )
+		'-- then the Glfw3 build correctly draws the outline but
+		'-- the Html5 build draws the right and bottom lines 1 line thicker
+
+		'-- to fix the problem the following SetScissor() command has been added but
+		'-- the Html5 build has a thicker ouline:
+		'-- SetScissor(RealX - 2, RealY - 2, W + 3, H + 3)
+
+		If Boarder = 1 Then
+			#if TARGET="html5"
+			
+			#else
+			SetScissor(RealX - 2, RealY - 2, W + 3, H + 3)
+			#endif
+			SetColor(50, 50, 50)
+			DrawLine(RealX, RealY, RealX + W, RealY)
+			DrawLine(RealX + W, RealY, RealX + W, RealY + H)
+			DrawLine(RealX, RealY + H, RealX + W, RealY + H)
+			DrawLine(RealX, RealY, RealX, RealY + H)
+			SetColor(255, 255, 255)
+		End If
+
+		Local TextX = RealX + (Boarder * 2)
+		Local TextY = RealY + (Boarder * 2)
+		
+		Local OldAlpha:Float = GetAlpha()
+
+		If Self.RealActive = 0 Then SetAlpha(GetAlpha() -0.6)
+		
+		DrawAlignedText(NormalFont, TextX, TextY, Text, Align)
+		
+		SetAlpha(OldAlpha)
+	End Method
+	
+	
+	
+	Method Update2()
+		W = TextWidthEscape(NormalFont,Text)
+		H = TextHeightEscape(NormalFont,Text)
+		If Boarder > 0 Then
+			Self.W = Self.W + 4
+			Self.H = Self.H + 4
+		End If
+		If Boarder < 0 Then Boarder = 0
+		If Boarder > 1 Then Boarder = 1
+		
+		If Align <> OldAlign Then
+			OldAlign = Align
+			Value = Value + 1
+		End If
+		
+		If Boarder <> OldBoarder Then
+			OldBoarder = Boarder
+			Value = Value + 1
+		End If
+		
+	End Method
+	
+	
+	
+	
+End Class
+

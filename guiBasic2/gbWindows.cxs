@@ -1,0 +1,633 @@
+Import guiBasic2
+'Import msxcompilercx
+
+Class Gui_Window Extends Gui
+	
+	Method New(X, Y, W, H, Title:String, Parent:Gui, Order = 1, Closeable = 1, Minimisable = 1, Maximisable = 1, Sizeable = 1, Moveable = 1, Statusbar = 1)
+		Self.Type = "Window"
+		Self.X = X
+		Self.Y = Y
+		Self.W = W
+		Self.H = H
+		Self.Text = Title
+		Self.Order = Order
+		Self.Closeable = Closeable
+		Self.Minimisable = Minimisable
+		Self.Maximisable = Maximisable
+		Self.Sizeable = Sizeable
+		Self.Moveable = Moveable
+		Self.Statusbar = Statusbar
+		Self.Parent = Parent
+		Self.Parent.Children.AddLast(Self)
+		Self.Children = New List<Gui>
+		
+		AddIcon(Atlas, 20, 320, 20, 20)
+		
+		'WindowButtons
+		
+		CloseButton = Gui.CreateImgButton(0, 0, 20, 20, Gui.Atlas, Self, 140, 80, 30, 30)
+		CloseButton.Type = "WindowButton"
+		CloseButton.Text = "WindowButton"
+		MaximiseButton = Gui.CreateImgButton(40, 0, 20, 20, Gui.Atlas, Self, 140, 110, 30, 30)
+		MaximiseButton.Type = "WindowButton"
+		MaximiseButton.Text = "WindowButton"
+		MinimiseButton = Gui.CreateImgButton(20, 0, 20, 20, Gui.Atlas, Self, 140, 50, 30, 30)
+		MinimiseButton.Type = "WindowButton"
+		MinimiseButton.Text = "WindowButton"
+		
+		ResizeButton = Gui.CreateImgButton(60, 0, 20, 20, Gui.Atlas, Self, 100, 320, 20, 20)
+		ResizeButton.Type = "WindowButton"
+		ResizeButton.Text = "WindowButton"
+		ResizeButton.IsResizeButton = 1
+		MinimiseButton.IsMinimiseButton = 1
+		'Setup Minimise Button
+		MinimiseButton.Images[0] = New Image(Gui.Atlas, 140, 50, 30, 30)
+		MinimiseButton.Images[1] = New Image(Gui.Atlas, 170, 50, 30, 30)
+		MinimiseButton.Images[2] = New Image(Gui.Atlas, 200, 50, 30, 30)
+		MinimiseButton.Images[3] = New Image(Gui.Atlas, 230, 50, 30, 30)
+
+		MinimiseButton.Images[0].SetHandle(15, 15)
+		MinimiseButton.Images[1].SetHandle(15, 15)
+		MinimiseButton.Images[2].SetHandle(15, 15)
+		MinimiseButton.Images[3].SetHandle(15, 15)
+
+		ZOrder(Self.Parent)
+		
+	End Method
+	
+	
+	
+	
+	Method Draw2()
+		'Shadows
+		If Gui.Shadows = 1 Then
+			'Parent.SetScissorWithinSelf(Parent.CanvasX, Parent.CanvasY, Parent.CanvasW, Parent.CanvasH)
+			SetScissor(Parent.DrawingX, Parent.DrawingY, Parent.DrawingW, Parent.DrawingH)
+			'SetScissor(DrawingX - ShadowOffset, DrawingY - ShadowOffset, DrawingW + ShadowOffset + ShadowOffset, DrawingH + ShadowOffset + ShadowOffset)
+			Local OldAlpha:Float = GetAlpha()
+			Gui.Draw3x3(DrawingX - ShadowOffset, DrawingY - ShadowOffset, DrawingW + ShadowOffset + ShadowOffset, DrawingH + ShadowOffset + ShadowOffset, 710, 270, 40, 40, 10)
+			SetAlpha(OldAlpha)
+			
+			SetScissor(DrawingX, DrawingY, DrawingW, DrawingH)
+		EndIf
+		
+		
+		Local MiddleHeight = H
+		Local MiddleY = RealY
+		Local AtlasY = 20
+		If CurrentWindow = Self Then AtlasY = 120
+		If RealActive = 0 Then AtlasY = 220
+
+		'Titlebar
+		If Text <> "" Then
+			Local ImgX = 20
+			Local ImgY = AtlasY
+			'Top 3
+			DrawImageRect(Atlas, RealX, RealY, ImgX, ImgY, 10, 10, 0, 1, 1)
+			DrawImageRect(Atlas, RealX + 10, RealY, ImgX + 10, ImgY, 100 - (20), 10, 0, (W - 20.0) / 80.0, 1)
+			DrawImageRect(Atlas, RealX + W - 10, RealY, ImgX + 100 - 10, ImgY, 10, 10, 0, 1, 1)
+			'Middle 3
+			DrawImageRect(Atlas, RealX, RealY + 10, ImgX, ImgY + 10, 10, 30 - (10), 0, 1, (TitleBarHeight - (10)) / (30 - (10.0)))
+			DrawImageRect(Atlas, RealX + 10, RealY + 10, ImgX + 10, ImgY + 10, 100 - (20), 30 - (10), 0, (W - (20.0)) / (100 - (20.0)), (TitleBarHeight - (10.0)) / (30 - (10.0)))
+			DrawImageRect(Atlas, RealX + W - 10, RealY + 10, ImgX + 100 - 10, ImgY + 10, 10, 30 - (10), 0, 1, (TitleBarHeight - (10)) / (30 - (10.0)))
+			'Title Text
+			SetFont(TitleFont)
+			Local TextX = RealX + 5
+			Local TextY = RealY + ( (TitleBarHeight - TextHeight(Text)) / 2.0)
+			
+			Local OldAlpha:Float = GetAlpha()
+			If Self.RealActive = 0 Then SetAlpha(GetAlpha() -0.6)
+			If Icon <> Null Then
+				TextX = TextX + 5 + (Gui.TitleBarHeight - 10.0)
+				'SetColor(255,255,255)
+				'SetAlpha(1)
+				'DrawImageRect(Icon, RealX + 5, RealY + 5, IconX, IconY, IconW, IconH, 0, (Gui.TitleBarHeight - 10.0) / Float(IconW), (Gui.TitleBarHeight - 10.0) / Float(IconH))
+				If Logo2 Then DrawImageRect(Logo2, RealX + 5, RealY + 5, 0, 0, 20, 20, 0, (Gui.TitleBarHeight - 10.0) / Float(IconW), (Gui.TitleBarHeight - 10.0) / Float(IconH))
+			End If
+			
+			DrawText(Text, TextX, TextY)
+			SetAlpha(OldAlpha)
+			MiddleHeight = MiddleHeight - TitleBarHeight
+			MiddleY = MiddleY + TitleBarHeight
+		Else
+			DrawImageRect(Atlas, RealX, RealY, 20, AtlasY + 35, 5, 5, 0, 1, 1)
+			DrawImageRect(Atlas, RealX + 5, RealY, 25, AtlasY + 35, 90, 5, 0, (W - (5 * 2.0)) / 90, 1)
+			DrawImageRect(Atlas, RealX + W - 5, RealY, 115, AtlasY + 35, 5, 5, 0, 1, 1)
+			MiddleHeight = MiddleHeight - 5
+			MiddleY = MiddleY + 5
+		End If
+		
+		'Bottom
+		SetFont(NormalFont)
+		If Self.Statusbar = 1 Then
+			Local YY = RealY + H - TextHeight(StatusText) - 4
+			Local HH = TextHeight(StatusText) + 4
+			Local ImgX = 20
+			Local ImgY = AtlasY + 75
+			Local ImgW = 100
+			Local ImgH = 15
+			
+			'Middle 3
+			DrawImageRect(Atlas, RealX, YY, ImgX, ImgY + 5, 5, ImgH - (5), 0, 1, (HH - (5.0)) / (ImgH - (5.0)))
+			DrawImageRect(Atlas, RealX + 5, YY, ImgX + 5, ImgY + 5, ImgW - (10.0), ImgH - (5.0), 0, (W - (10.0)) / (ImgW - (10.0)), (HH - (5.0)) / (ImgH - (5.0)))
+			DrawImageRect(Atlas, RealX + W - 5, YY, ImgX + ImgW - 5, ImgY + 5, 5, ImgH - (5.0), 0, 1, (HH - (5.0)) / (ImgH - (5.0)))
+			
+			'Bottom 3
+			DrawImageRect(Atlas, RealX, YY + HH - 5, ImgX, ImgY + ImgH, 5, 5, 0, 1, 1)
+			DrawImageRect(Atlas, RealX + 5, YY + HH - 5, ImgX + 5, ImgY + ImgH, ImgW - (10), 5, 0, (W - (10.0)) / (ImgW - (10.0)), 1)
+			DrawImageRect(Atlas, RealX + W - 5, YY + HH - 5, ImgX + ImgW - 5, ImgY + ImgH, 5, 5, 0, 1, 1)
+			'Status Text
+			Local TextX = RealX + 5
+			Local TextY = RealY + H - TextHeight(StatusText) - 2
+			Local OldAlpha:Float = GetAlpha()
+			If Self.RealActive = 0 Then SetAlpha(GetAlpha() -0.6)
+			DrawText(StatusText, TextX, TextY)
+			SetAlpha(OldAlpha)
+			MiddleHeight = MiddleHeight - TextHeight(StatusText) - 4
+		Else
+			DrawImageRect(Atlas, RealX, RealY + H - 5, 20, AtlasY + 70, 5, 5, 0, 1, 1)
+			DrawImageRect(Atlas, RealX + 5, RealY + H - 5, 25, AtlasY + 70, 90, 5, 0, (W - (5 * 2.0)) / 90, 1)
+			DrawImageRect(Atlas, RealX + W - 5, RealY + H - 5, 115, AtlasY + 70, 5, 5, 0, 1, 1)
+			MiddleHeight = MiddleHeight - 5
+		End If
+		
+		'Middle
+		Gui.Draw3x3(RealX, MiddleY, W, MiddleHeight, 20, AtlasY + 40, 100, 30, 10)
+		
+		'Canvas
+		If Canvas <> Null Then
+			SetScissorWithinSelf( (CanvasX - RealX), (CanvasY - RealY), CanvasW, CanvasH+1)
+			Canvas.Draw()
+			SetScissor(DrawingX, DrawingY, DrawingW, DrawingH)
+		EndIf
+		
+		
+		'MenuBar
+		If HasMenu = 1 Then
+			Local HH = TextHeight("Testing123") + 4
+			Local YY = TitleBarHeight + 1
+			If Text = "" Then YY = 6
+			If CanvasH < 0 And HasTabs = 0 Then HH = TextHeight("Testing123") + 5 + CanvasH
+			Gui.Draw3x3(RealX + 6, RealY + YY, W - 12, HH, 480, 20, 30, 30, 5)
+		End If
+		'TabBar
+		If HasTabs = 1 Then
+			Local HH = TextHeight("Testing123") + 10
+			Local YY = TitleBarHeight + 1
+			If Text ="" Then YY = 5
+			If HasMenu Then YY = YY + TextHeight("Testing123") + 5
+			If CanvasH < 0 Then HH = TextHeight("Testing123") + 12 + CanvasH
+			Gui.Draw3x3(RealX + 6, RealY + YY, W - 12, HH, 620, 120, 60, 30, 10)
+		End If
+	
+		
+		
+		
+		
+	End Method
+	
+	
+	
+	Method Update2()
+		'Update Canvas Position - (Real coords)
+		CanvasX = RealX + 6
+		CanvasW = W - 12
+		CanvasH = H
+		SetFont(Gui.NormalFont)
+		If Text <> "" Then
+			CanvasY = RealY + TitleBarHeight + 1
+			CanvasH = CanvasH - TitleBarHeight - 2
+		Else
+			CanvasY = RealY + 6
+			CanvasH = CanvasH - 6
+		End If
+		If Statusbar = 1 Then
+			CanvasH = CanvasH - TextHeight(StatusText) - 4
+		Else
+			CanvasH = CanvasH - 6
+		End If
+		
+		If HasMenu = 1 Then
+			CanvasY = CanvasY + TextHeight("Testing123") + 5
+			CanvasH = CanvasH - TextHeight("Testing123") - 5
+		End If
+		If HasTabs = 1 Then
+			CanvasY = CanvasY + TextHeight("Testing123") + 10
+			CanvasH = CanvasH - TextHeight("Testing123") - 10
+		End If
+		
+		'UpdateCanvas
+		If Canvas <> Null Then
+			Canvas.X = CanvasX
+			Canvas.Y = CanvasY
+			Canvas.W = CanvasW
+			Canvas.H = CanvasH
+			Canvas.Visible = RealVisible
+			Canvas.Active = RealActive
+			Canvas.Update()
+		EndIf
+		
+		'Moving
+		Local HH = Self.H
+		If Minimised Then HH = TitleBarHeight
+		If Moveable = 1 And Text <> "" Then
+			If Gui.Down = Self And TouchY() < RealY + Gui.TitleBarHeight And Moving = 0 Then
+				Moving = 1
+				MovingX = TouchX() -X
+				MovingY = TouchY() -Y
+			End If
+			If TouchDown() = 0 Then Moving = 0
+			If Moving = 1 Then
+				X = TouchX() -MovingX
+				Y = TouchY() -MovingY
+				
+				If X < 0 Then X = 0
+				If Y < 0 Then Y = 0
+				If X > (Parent.CanvasW - W) Then X = (Parent.CanvasW - W)
+				If Y > (Parent.CanvasH - HH) Then Y = (Parent.CanvasH - HH)
+			End If
+		End If
+		
+		
+		'Resizing
+		If Sizeable = 1 Then
+			If Resizing = 0 And Gui.Down = Self.ResizeButton Then
+				Resizing = 1
+				ResizingX = TouchX()
+				ResizingY = TouchY()
+				ResizingW = W
+				ResizingH = H
+			End If
+			
+			If TouchDown() = 0 Then Resizing = 0
+			
+			If Resizing = 1 Then
+				If X + (ResizingW + TouchX() -ResizingX) <= Parent.CanvasW Then
+					W = ResizingW + TouchX() -ResizingX
+				Else
+					W = Parent.CanvasW - X
+				End If
+				If Y + (ResizingH + TouchY() -ResizingY) <= Parent.CanvasH Then
+					H = ResizingH + TouchY() -ResizingY
+				Else
+					H = Parent.CanvasH - Y
+				End If
+				
+				
+			EndIf
+		End If
+		If Text = "" Then Moveable = 0
+		
+		
+		'Contain Within Parent
+		If Moveable = 1 And Sizeable = 1 Then
+			If W > Parent.CanvasW Then W = Parent.CanvasW
+			If H > Parent.CanvasH Then H = Parent.CanvasH
+			If X < 0 Then X = 0
+			If Y < 0 Then Y = 0
+			If Minimised = 1 Then
+				If X + W > Parent.CanvasW Then X = Parent.CanvasW - W
+				If Y + HH > Parent.CanvasH Then Y = Parent.CanvasH - HH
+			Else
+				If X + W > Parent.CanvasW Then X = Parent.CanvasW - W
+				If Y + HH > Parent.CanvasH Then Y = Parent.CanvasH - HH
+			End If
+			
+		End If
+		If Moveable = 1 And Sizeable = 0 Then
+			If X + W > Parent.CanvasW Then X = Parent.CanvasW - W
+			If Y + HH > Parent.CanvasH Then Y = Parent.CanvasH - HH
+			If X < 0 Then X = 0
+			If Y < 0 Then Y = 0
+			
+		End If
+		If Moveable = 0 And Sizeable = 1 Then
+			If X + W > Parent.CanvasW Then W = Parent.CanvasW - X
+			If Y + HH > Parent.CanvasH Then H = Parent.CanvasH - Y
+		End If
+				
+		
+		'Maximising Animation
+		If Self.Maximised = 1 And Maximising = 0 Then
+			X = 0
+			Y = 0
+			W = Parent.CanvasW
+			H = Parent.CanvasH
+		EndIf
+		If Self.Maximising = 1 Then
+			If W < Parent.CanvasW Then W = W + AnimatedSpeed
+			If H < Parent.CanvasH Then H = H + AnimatedSpeed
+			If X > 0 Then X = X - AnimatedSpeed
+			If Y > 0 Then Y = Y - AnimatedSpeed
+			
+			If X < 0 Then X = 0
+			If Y < 0 Then Y = 0
+			If W > Parent.CanvasW Then W = Parent.CanvasW
+			If H > Parent.CanvasH Then H = Parent.CanvasH
+			
+			If X = 0 And Y = 0 And W = Parent.CanvasW And H = Parent.CanvasH Then
+				Maximising = 0
+				Maximised = 1
+			End If
+		EndIf
+		If Self.Maximising = -1 Then
+			If W > MaximisingW Then W = W - AnimatedSpeed
+			If H > MaximisingH Then H = H - AnimatedSpeed
+			If X < MaximisingX Then X = X + AnimatedSpeed
+			If Y < MaximisingY Then Y = Y + AnimatedSpeed
+			
+			If X > MaximisingX Then X = MaximisingX
+			If Y > MaximisingY Then Y = MaximisingY
+			If W < MaximisingW Then W = MaximisingW
+			If H < MaximisingH Then H = MaximisingH
+			
+			If MaximisingW > Parent.CanvasW Then MaximisingW = Parent.CanvasW
+			If MaximisingH > Parent.CanvasH Then MaximisingH = Parent.CanvasH
+			
+			If MaximisingX + MaximisingW > Parent.CanvasW Then MaximisingX = Parent.CanvasW - MaximisingW
+			If MaximisingY + MaximisingH > Parent.CanvasH Then MaximisingY = Parent.CanvasH - MaximisingH
+		
+			If X = MaximisingX And Y = MaximisingY And W = MaximisingW And H = MaximisingH Then
+				Maximising = 0
+				Maximised = 0
+			End If
+		EndIf
+		
+		
+		'Closing Animation
+		If Closing = 1 Then
+			ClosingAlpha = ClosingAlpha - (AnimatedSpeed / 500.0)
+			If ClosingAlpha <= 0.1 Then ClosingAlpha = 0
+			If ClosingAlpha = 0 Then
+				Visible = 0
+				Closing = 0
+			EndIf
+		EndIf
+	
+		
+		'Minimum W And H
+		Local MH = 1
+		SetFont(NormalFont)
+		If HasMenu Then MH = TextHeight("Testing123")
+		If HasTabs Then MH = MH + 7
+		If Text <> "" And Statusbar = 1 And H < 64 + MH Then H = 64 + MH
+		If Text = "" And Statusbar = 1 And H < (74 - TitleBarHeight + MH) Then H = (74 - TitleBarHeight + MH)
+		If Text = "" And Statusbar = 0 And H < (TitleBarHeight - 8 + MH) Then H = (TitleBarHeight - 8 + MH)
+		If Text <> "" And Statusbar = 0 And H < (TitleBarHeight + 15 + MH) Then H = (TitleBarHeight + 15 + MH)
+
+		If W < TitleBarHeight * 4 Then W = TitleBarHeight * 4
+		
+		
+		
+		
+		
+		'Minimum X And Y
+		If X < 0 Then X = 0
+		If Y < 0 Then Y = 0
+		
+		
+		'Update Window Buttons
+		
+		
+		
+		
+		Local ButtonWidth = (Gui.TitleBarHeight - 10)
+		Local ButtonY = 5
+		Local ButtonX = W - 5 - ButtonWidth
+		If Closeable = 1 Then
+			CloseButton.Active = 1
+			CloseButton.X = ButtonX
+			CloseButton.Y = ButtonY
+			If Text = "" Then
+				CloseButton.X = ButtonX + 4
+				CloseButton.Y = ButtonY - 4
+			End If
+			
+			CloseButton.W = ButtonWidth
+			CloseButton.H = ButtonWidth
+			ButtonX = ButtonX - ButtonWidth
+			
+		Else
+			CloseButton.Active = 0
+			CloseButton.X = ButtonX
+			CloseButton.Y = ButtonY
+			If Text = "" Then
+				CloseButton.X = ButtonX + 4
+				CloseButton.Y = ButtonY - 4
+			End If
+			
+			CloseButton.W = ButtonWidth
+			CloseButton.H = ButtonWidth
+			ButtonX = ButtonX - ButtonWidth
+		End If
+		If Text = "" And Closeable = 0 Then CloseButton.Visible = 0
+		
+		If Maximisable = 1 And Text <> "" Then
+			MaximiseButton.Active = 1
+			MaximiseButton.X = ButtonX
+			MaximiseButton.Y = ButtonY
+			MaximiseButton.W = ButtonWidth
+			MaximiseButton.H = ButtonWidth
+			ButtonX = ButtonX - ButtonWidth
+			If Maximised = 1 Then
+				MaximiseButton.ButtonImgY = 140
+				ResizeButton.Active = 0
+			Else
+				MaximiseButton.ButtonImgY = 110
+				ResizeButton.Active = 1
+			EndIf
+		Else
+			MaximiseButton.Active = 0
+			MaximiseButton.X = ButtonX
+			MaximiseButton.Y = ButtonY
+			MaximiseButton.W = ButtonWidth
+			MaximiseButton.H = ButtonWidth
+			ButtonX = ButtonX - ButtonWidth
+		End If
+		If Minimisable = 1 And Text <> "" Then
+			MinimiseButton.Active = 1
+			MinimiseButton.X = ButtonX
+			MinimiseButton.Y = ButtonY
+			MinimiseButton.W = ButtonWidth
+			MinimiseButton.H = ButtonWidth
+			ButtonX = ButtonX - ButtonWidth
+			MinimiseButton.ButtonImgY = 50 - (Minimised * 30)
+			If Minimised = 1 Then
+				MaximiseButton.Active = 0
+			Else
+				MaximiseButton.Active = 1
+			EndIf
+		Else
+			MinimiseButton.Active = 0
+			MinimiseButton.X = ButtonX
+			MinimiseButton.Y = ButtonY
+			MinimiseButton.W = ButtonWidth
+			MinimiseButton.H = ButtonWidth
+			ButtonX = ButtonX - ButtonWidth
+			MinimiseButton.ButtonImgY = 50 - (Minimised * 30)
+		End If
+		If Text = "" Then
+			MinimiseButton.Visible = 0
+			MaximiseButton.Visible = 0
+		End If
+		
+		If Sizeable = 1 Then
+			ResizeButton.Visible = 1
+			ResizeButton.X = W - ButtonWidth
+			ResizeButton.Y = H - ButtonWidth
+			ResizeButton.W = ButtonWidth
+			ResizeButton.H = ButtonWidth
+			ButtonX = ButtonX - ButtonWidth
+		Else
+			ResizeButton.Visible = 0
+		End If
+		
+		
+		'DoubleClick Titlebar
+		If Gui.DoubleClicked = Self And Text <> "" And Minimisable = 1 Then
+			If TouchY() < RealY + TitleBarHeight Then
+				If Gui.DoubleClicked.Minimised = 0 Then
+					If Animated = 0 Then
+						Minimised = 1
+					Else
+						Minimising = 1
+					End If
+				Else
+					If Animated = 0 Then
+						Minimised = 0
+					Else
+						Minimising = -1
+					End If
+				End If
+			End If
+		EndIf
+		
+		'Close Button Clicked
+		If Gui.Clicked = CloseButton Then
+
+			'********
+			CloseWINDOWS
+
+			Gui.OnFocus = Null
+			
+			If Self.Parent.Type = "Window" Then
+				OnFocus = Self.Parent
+				CurrentWindow = OnFocus
+			Else
+				OnFocus = Null
+				CurrentWindow = Null
+			EndIf
+			
+			
+			
+			
+			If Animated = 0 Or Parent.Type="MsgBox" Then
+				Visible = 0
+			Else
+				Closing = 1
+				ClosingAlpha = 1
+			End If
+		End If
+		
+		'Maximise Button Clicked
+		If Gui.Clicked = MaximiseButton And Minimising = 0 And Maximising = 0 Then
+			If Maximised = 0 Then
+				If Animated = 0 Then
+					Maximised = 1
+					MaximisingW = W
+					MaximisingH = H
+					W = Parent.CanvasW
+					H = Parent.CanvasH
+					MaximisingX = X
+					MaximisingY = Y
+					X = 0
+					Y = 0
+				Else
+					Maximising = 1
+					MaximisingX = X
+					MaximisingY = Y
+					MaximisingW = W
+					MaximisingH = H
+				End If
+			Else
+				If Animated = 0 Then
+					Maximised = 0
+					X = MaximisingX
+					Y = MaximisingY
+					W = MaximisingW
+					H = MaximisingH
+				Else
+					Maximising = -1
+				End If
+			End If
+		End If
+		
+		'Minimise Button Clicked
+		If Gui.Clicked = MinimiseButton Then
+			If Minimised = 0 Then
+				If Animated = 0 Then
+					Minimised = 1
+				Else
+					Minimising = 1
+				End If
+			Else
+				If Animated = 0 Then
+					Minimised = 0
+				Else
+					Minimising = -1
+				End If
+			End If
+		End If
+		
+		
+		'Menu X
+		If HasMenu = 1 Then
+			Local XX = 0
+			For Local i:Gui = EachIn Children
+				If i.Type = "Menu" Then
+					If i.RealVisible Then
+						i.X = XX
+						XX = XX + i.W
+					End If
+				End If
+			Next
+		End If
+
+		'TabX
+		If HasTabs = 1 Then
+			Local XX = 5
+			For Local i:Gui = EachIn Children
+				If i.Type = "Tab" Then
+					If i.RealVisible Then
+						i.X = XX
+						XX = XX + i.W
+					End If
+				End If
+			Next
+		End If
+		
+		
+		
+		
+		
+		'Change WindoButtons if style changed
+		If Gui.StyleChanged = 1 Then
+			Self.CloseButton.ButtonImg = Gui.Atlas
+			Self.MinimiseButton.ButtonImg = Gui.Atlas
+			Self.ResizeButton.ButtonImg = Gui.Atlas
+			Self.MaximiseButton.ButtonImg = Gui.Atlas
+		EndIf
+		 
+		 
+		If CurrentWindow = Self And TouchDown()
+			If TouchX() >= DrawingX And TouchX() <= DrawingX + DrawingW And TouchY() >= DrawingY And TouchY() <= DrawingY + DrawingH Then
+				'Nothing
+			Else
+				CurrentWindow = Null
+			EndIf
+		EndIf
+	End Method
+	
+		
+End Class
+

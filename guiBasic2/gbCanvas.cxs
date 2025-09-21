@@ -1,0 +1,18 @@
+Import guiBasic2
+
+Class guiBasic_Canvas
+	Field Parent:Gui
+	Field X, Y, W, H, Visible, Active
+
+	Method Draw()
+		
+	End Method
+	
+	Method Update()
+		
+	End Method
+	
+	
+End Class
+
+

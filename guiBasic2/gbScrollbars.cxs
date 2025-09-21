@@ -1,0 +1,423 @@
+Import guiBasic2
+
+Class Gui_VScrollbar Extends Gui
+	
+	Method New(X, Y, W, H, Minimum, Maximum, Parent:Gui, Value:float = 0, Stp = 0, FLOPS = 0)
+		Self.Type = "VScrollbar"
+		Self.X = X
+		Self.Y = Y
+		Self.W = W
+		Self.H = H
+		Self.Stp = Stp
+		Self.Minimum = Minimum
+		Self.Maximum = Maximum
+		Self.FloatValue = Value
+		Self.Value = Int(Value)
+		Self.Parent = Parent
+		Self.Parent.Children.AddLast(Self)
+		Self.Children = New List<Gui>
+		If FLOPS = 0 Then ZOrder(Self.Parent)
+		
+		Self.PlusButton = New Gui_ScrollbarButton(Self)
+		Self.PlusButton.W = W
+		Self.PlusButton.H = W
+		Self.PlusButton.Y = H - W
+		Self.PlusButton.Type = "PlusButton"
+		
+		Self.MinusButton = New Gui_ScrollbarButton(Self)
+		Self.MinusButton.W = W
+		Self.MinusButton.H = W
+		Self.MinusButton.Type = "MinusButton"
+		
+		Self.SliderButton = New Gui_ScrollbarSlider(Self)
+		Self.SliderButton.X = 1
+		Self.SliderButton.W = Self.W-2
+		
+		'Slider Height
+		Self.SliderButton.H = (H - W - W - Maximum - Minimum) * (0.9)
+		If Self.SliderButton.H < 15 Then Self.SliderButton.H = 15
+		If (Self.Maximum - Self.Minimum) < 1 Then Self.SliderButton.H = (Self.H - Self.W - Self.W)
+		
+		'SliderY
+		Self.SliderButton.Y = Self.W + ( ( ( (Self.FloatValue * 1.0) - Self.Minimum) / (Self.Maximum - Self.Minimum)) * (Self.H - Self.W - Self.W - Self.SliderButton.H))
+		
+		
+		
+		
+		
+	End Method
+	
+	
+	Method Draw2()
+		Local AtlasX = 400
+		Local AtlasY = 250
+	
+		If Gui.Over = Self Or Gui.Over = Self.MinusButton Or Gui.Over = Self.PlusButton Or Gui.Over = Self.SliderButton Then AtlasX = 430
+		If Gui.Down = Self Or Gui.Down = Self.MinusButton Or Gui.Down = Self.PlusButton Or Gui.Down = Self.SliderButton Then AtlasX = 430
+		If Self.RealActive = 0 Then AtlasX = 460
+		
+		'Draw3x3(RealX, RealY, W, H, AtlasX, AtlasY, 30, 30, 10)
+		DrawImageRect(Gui.Atlas, RealX, RealY+W, AtlasX, AtlasY, 30, 30, 0, W / 30.0, (H-W-W) / 30.0)
+		
+	End Method
+	
+	
+	
+	Method Update2()
+		'If User Change
+		If Int(FloatValue) <> Value Then FloatValue = Value
+		
+		
+		
+		
+		
+		'Change For Step Values
+		If Stp > 0 Then
+			Local Flt:Float = (FloatValue * 1.0) / Stp
+			Local Intt = Int(FloatValue) / Stp
+			Local Remainder:Float = Flt - Intt
+			FloatValue = (Int( (FloatValue * 1.0) / Stp)) * Stp
+			If Remainder > 0.5 Then FloatValue = FloatValue + Stp
+		End If
+		
+		'Slider Height
+		Self.SliderButton.H = (H - W - W - Maximum - Minimum) * (0.9)
+		If Self.SliderButton.H < 15 Then Self.SliderButton.H = 15
+		If (Self.Maximum - Self.Minimum) < 1 Then Self.SliderButton.H = (Self.H - Self.W - Self.W)
+		
+		
+		'Slider Buttons
+		Self.MinusButton.X = 0
+		Self.MinusButton.Y = 0
+		Self.PlusButton.X = 0
+		Self.PlusButton.Y = H - W
+		Self.SliderButton.X = 0
+		
+		Self.MinusButton.W = W
+		Self.MinusButton.H = W
+		Self.PlusButton.W = W
+		Self.PlusButton.H = W
+		Self.SliderButton.W = W
+		
+		'SliderY
+		Self.SliderButton.Y = Self.W + ( ( ( (Self.FloatValue * 1.0) - Self.Minimum) / (Self.Maximum - Self.Minimum)) * (Self.H - Self.W - Self.W - Self.SliderButton.H))
+		
+		'Keep Within Min and Max
+		If FloatValue > Maximum Then FloatValue = Maximum
+		If FloatValue < Minimum Then FloatValue = Minimum
+		
+		
+		
+		'BGBarDown
+		If Gui.Down = Self Then
+			FloatValue = ( ( ( (TouchY() -RealY - (SliderButton.H / 2)) - W) / (H - W - W - SliderButton.H)) * (Maximum - Minimum)) + Minimum
+
+			'Change For Step Values
+			If Stp > 0 Then
+				Local Flt:Float = (FloatValue * 1.0) / Stp
+				Local Intt = Int(FloatValue) / Stp
+				Local Remainder:Float = Flt - Intt
+				FloatValue = (Int( (FloatValue * 1.0) / Stp)) * Stp
+				If Remainder > 0.5 Then FloatValue = FloatValue + Stp
+			End If
+			
+			
+			If FloatValue > Maximum Then FloatValue = Maximum
+			If FloatValue < Minimum Then FloatValue = Minimum
+			Value = Int(FloatValue)
+			Gui.Down = Null
+		End If
+		
+		
+		
+		
+		
+		Self.Value = Int(Self.FloatValue)
+	End Method
+	
+	
+	
+	
+End Class
+
+
+
+Class Gui_HScrollbar Extends Gui
+	
+	Method New(X, Y, W, H, Minimum, Maximum, Parent:Gui, Value:float = 0, Stp = 0)
+		Self.Type = "HScrollbar"
+		Self.X = X
+		Self.Y = Y
+		Self.W = W
+		Self.H = H
+		Self.Stp = Stp
+		Self.Minimum = Minimum
+		Self.Maximum = Maximum
+		Self.FloatValue = Value
+		Self.Value = Int(Value)
+		Self.Parent = Parent
+		Self.Parent.Children.AddLast(Self)
+		Self.Children = New List<Gui>
+		ZOrder(Self.Parent)
+		
+		Self.PlusButton = New Gui_ScrollbarButton(Self)
+		Self.PlusButton.W = H
+		Self.PlusButton.H = H
+		Self.PlusButton.X = W - H
+		Self.PlusButton.Type = "PlusButton"
+		
+		Self.MinusButton = New Gui_ScrollbarButton(Self)
+		Self.MinusButton.W = H
+		Self.MinusButton.H = H
+		Self.MinusButton.Type = "MinusButton"
+		
+		Self.SliderButton = New Gui_ScrollbarSlider(Self)
+		Self.SliderButton.Y = 1
+		Self.SliderButton.H = Self.H - 2
+		
+		'Slider Height
+		Self.SliderButton.W = (W - H - H - Maximum - Minimum) * (0.9)
+		If Self.SliderButton.W < 15 Then Self.SliderButton.W = 15
+		If (Self.Maximum - Self.Minimum) < 1 Then Self.SliderButton.W = (Self.W - Self.H - Self.H)
+		
+		'SliderY
+		Self.SliderButton.X = Self.H + ( ( ( (Self.FloatValue * 1.0) - Self.Minimum) / (Self.Maximum - Self.Minimum)) * (Self.W - Self.H - Self.H - Self.SliderButton.W))
+		
+		
+		
+		
+		
+	End Method
+	
+	
+	Method Draw2()
+		Local AtlasX = 400
+		Local AtlasY = 180
+	
+		If Gui.Over = Self Or Gui.Over = Self.MinusButton Or Gui.Over = Self.PlusButton Or Gui.Over = Self.SliderButton Then AtlasX = 430
+		If Gui.Down = Self Or Gui.Down = Self.MinusButton Or Gui.Down = Self.PlusButton Or Gui.Down = Self.SliderButton Then AtlasX = 430
+		If Self.RealActive = 0 Then AtlasX = 460
+		
+		DrawImageRect(Gui.Atlas, RealX + H, RealY, AtlasX, AtlasY, 30, 30, 0, (W - H - H) / 30.0, H / 30.0)
+		
+	End Method
+	
+	
+	
+	Method Update2()
+		'If User Change
+		If Int(FloatValue) <> Value Then FloatValue = Value
+		
+		'Change For Step Values
+		If Stp > 0 Then
+			Local Flt:Float = (FloatValue * 1.0) / Stp
+			Local Intt = Int(FloatValue) / Stp
+			Local Remainder:Float = Flt - Intt
+			FloatValue = (Int( (FloatValue * 1.0) / Stp)) * Stp
+			If Remainder > 0.5 Then FloatValue = FloatValue + Stp
+		End If
+		'Slider Buttons
+		Self.MinusButton.X = 0
+		Self.MinusButton.Y = 0
+		Self.PlusButton.X = W - H
+		Self.PlusButton.Y = 0
+		Self.SliderButton.Y = 0
+		
+		Self.MinusButton.H = H
+		Self.MinusButton.W = H
+		Self.PlusButton.H = H
+		Self.PlusButton.W = H
+		Self.SliderButton.H = H
+		
+		'Slider Height
+		Self.SliderButton.W = (W - H - H - Maximum - Minimum) * (0.9)
+		If Self.SliderButton.W < 15 Then Self.SliderButton.W = 15
+		If (Self.Maximum - Self.Minimum) < 1 Then Self.SliderButton.W = (Self.W - Self.H - Self.H)
+		
+		
+		'SliderY
+		Self.SliderButton.X = Self.H + ( ( ( (Self.FloatValue * 1.0) - Self.Minimum) / (Self.Maximum - Self.Minimum)) * (Self.W - Self.H - Self.H - Self.SliderButton.W))
+		
+		'Keep Within Min and Max
+		If FloatValue > Maximum Then FloatValue = Maximum
+		If FloatValue < Minimum Then FloatValue = Minimum
+		
+		
+		
+		'BGBarDown
+		If Gui.Down = Self Then
+			FloatValue = ( ( ( (TouchX() -RealX - (SliderButton.W / 2)) - H) / (W - H - H - SliderButton.W)) * (Maximum - Minimum)) + Minimum
+
+			'Change For Step Values
+			If Stp > 0 Then
+				Local Flt:Float = (FloatValue * 1.0) / Stp
+				Local Intt = Int(FloatValue) / Stp
+				Local Remainder:Float = Flt - Intt
+				FloatValue = (Int( (FloatValue * 1.0) / Stp)) * Stp
+				If Remainder > 0.5 Then FloatValue = FloatValue + Stp
+			End If
+			
+			
+			If FloatValue > Maximum Then FloatValue = Maximum
+			If FloatValue < Minimum Then FloatValue = Minimum
+			Value = Int(FloatValue)
+			Gui.Down = Null
+		End If
+		
+		
+		
+		
+		
+		Self.Value = Int(Self.FloatValue)
+	End Method
+	
+	
+	
+	
+End Class
+
+
+
+Class Gui_ScrollbarButton Extends Gui
+	
+	Method New(Parent:Gui)
+		Self.Parent = Parent
+		Self.Parent.Children.AddLast(Self)
+		Self.Children = New List<Gui>
+	End Method
+	
+	
+	Method Draw2()
+		Local AtlasX = 270
+		Local AtlasY = 180
+		
+		If Parent.Type = "VScrollbar" Then
+			AtlasY = 250
+		End If
+		
+		If Self.Type = "PlusButton" Then
+			AtlasY = AtlasY + 30
+		End If
+		
+		If Gui.Over = Self Then AtlasX = 300
+		If Gui.Down = Self Then AtlasX = 330
+		If Self.RealActive = 0 Then AtlasX = 360
+		
+		
+		
+		DrawImageRect(Gui.Atlas, RealX, RealY, AtlasX, AtlasY, 30, 30, 0, W / 30.0, H / 30.0)
+		
+		
+	End Method
+	
+	
+	
+	Method Update2()
+		Local Amt = Parent.Stp
+		If Amt = 0 Then Amt = 1
+		
+		If Gui.Clicked = Self Then
+			If Self.Type = "PlusButton" Then
+				Parent.FloatValue = Parent.FloatValue + Amt
+				
+			Else
+				Parent.FloatValue = Parent.FloatValue - Amt
+			End If
+		
+			If Parent.FloatValue > Parent.Maximum Then Parent.FloatValue = Parent.Maximum
+			If Parent.FloatValue < Parent.Minimum Then Parent.FloatValue = Parent.Minimum
+			Parent.Value = Int(Parent.FloatValue)
+		
+		End If
+		
+		'HoldDownMinsButton
+		If Gui.Down = Self And (Millisecs() -Gui.DownTime) > 700 Then
+			If Self.Type = "PlusButton"
+				Parent.FloatValue = Parent.FloatValue + Amt
+			Else
+				Parent.FloatValue = Parent.FloatValue - Amt
+			End If
+			If Parent.FloatValue > Parent.Maximum Then Parent.FloatValue = Parent.Maximum
+			If Parent.FloatValue < Parent.Minimum Then Parent.FloatValue = Parent.Minimum
+			Parent.Value = Int(Parent.FloatValue)
+		EndIf
+		
+	End Method
+	
+	
+	
+	
+End Class
+
+
+
+Class Gui_ScrollbarSlider Extends Gui
+	
+	Method New(Parent:Gui)
+		Self.Type = "ScrollbarSlider"
+		Self.Parent = Parent
+		Self.Parent.Children.AddLast(Self)
+		Self.Children = New List<Gui>
+	End Method
+	
+	
+	Method Draw2()
+		Local AtlasX = 400
+		Local AtlasY = 210
+		
+		If Parent.Type = "VScrollbar" Then AtlasY = 280
+		If Gui.Over = Self Then AtlasX = 430
+		If Gui.Down = Self Then AtlasX = 460
+		If Self.RealActive = 0 Then AtlasX = 490
+		
+		Gui.Draw3x3(RealX, RealY, W, H, AtlasX, AtlasY, 30, 30, 5)
+		
+	End Method
+	
+	
+	
+	Method Update2()
+		If Gui.Down = Self And Moving = 0 Then
+			Moving = 1
+			MovingY = TouchY() -RealY
+			MovingX = TouchX() -RealX
+		End If
+		
+		If TouchDown = 0 Then Moving = 0
+		
+		If Moving = 1 Then
+			
+			If Parent.Type = "VScrollbar" Then
+				Parent.FloatValue = ( ( ( (TouchY() -Parent.RealY - (MovingY)) - Parent.W) / (Parent.H - Parent.W - Parent.W - H)) * (Parent.Maximum - Parent.Minimum)) + Parent.Minimum
+			Else
+				Parent.FloatValue = ( ( ( (TouchX() -Parent.RealX - (MovingX)) - Parent.H) / (Parent.W - Parent.H - Parent.H - W)) * (Parent.Maximum - Parent.Minimum)) + Parent.Minimum
+			End If
+		
+			
+			'Change For Step Values
+			If Parent.Stp > 0 Then
+				Local Flt:Float = (Parent.FloatValue * 1.0) / Parent.Stp
+				Local Intt = Int(Parent.FloatValue) / Parent.Stp
+				Local Remainder:Float = Flt - Intt
+				Parent.FloatValue = (Int( (Parent.FloatValue * 1.0) / Parent.Stp)) * Parent.Stp
+				If Remainder > 0.5 Then Parent.FloatValue = Parent.FloatValue + Parent.Stp
+			End If
+			
+			
+			If Parent.FloatValue > Parent.Maximum Then Parent.FloatValue = Parent.Maximum
+			If Parent.FloatValue < Parent.Minimum Then Parent.FloatValue = Parent.Minimum
+			Parent.Value = Int(Parent.FloatValue)
+			
+
+		End If
+		
+		
+			
+		
+			
+	End Method
+	
+	
+	
+	
+End Class

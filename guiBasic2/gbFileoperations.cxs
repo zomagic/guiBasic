@@ -1,0 +1,362 @@
+Import guiBasic2
+Import os
+
+
+
+Class Gui_FileOperation Extends Gui
+
+	
+	Method New()
+		
+		Local X = 0
+		Local Y = 0
+		Local W = 388
+		Local H = 400 - 8 - Gui.TitleBarHeight
+		
+		File_Window = Gui.CreateWindow(50, 50, 400, 400, "File Operation", Gui.CurrentScreen, 2, 1, 0, 0, 0, 1, 0)
+		File_Window.PartOfFileOperations = 1
+		File_Window.Canvas = New Gui_FileOperationsBG
+		
+		
+		File_Listbox = Gui.CreateListbox(0, 40, W, H - 40 - 70, File_Window)
+		File_Listbox.PartOfFileOperations = 1
+		File_TextBox = Gui.CreateTextField(5, H - 55, W - 10, 20, File_Window, "TextBox", 1, 1, 0)
+		File_TextBox.PartOfFileOperations = 1
+		File_Listbox.ListboxScrollbar.PartOfFileOperations = 1
+		File_Listbox.ListboxScrollbar.MinusButton.PartOfFileOperations = 1
+		File_Listbox.ListboxScrollbar.PlusButton.PartOfFileOperations = 1
+		File_Listbox.ListboxScrollbar.SliderButton.PartOfFileOperations = 1
+		
+		
+		File_CancelButton = Gui.CreateButton(W - 125 - 125, H - 30, 120, 25, "Cancel", File_Window)
+		File_CancelButton.PartOfFileOperations = 1
+		File_OkButton = Gui.CreateButton(W - 125, H - 30, 120, 25, "Ok", File_Window, 1)
+		File_OkButton.PartOfFileOperations = 1
+		File_Label =  New Gui_Label(5, 10, "Path", File_Window,0,0,1)
+		File_Label.PartOfFileOperations = 1
+		File_Label.IsFlops = 1
+		File_LevelUp = Gui.CreateImgButton(W - 40, 5, 30, 30, FileOps, File_Window, 40, 0, 40, 40)
+		File_LevelUp.PartOfFileOperations = 1
+
+		
+	End Method
+	
+	
+	
+	
+	Method Update2()
+		'Update label
+		Gui.FileOperations.File_Label.X = 0
+		If Gui.FileOperations.File_Label.W > 345 Then Gui.FileOperations.File_Label.X = -1 * (Gui.FileOperations.File_Label.W - 345)
+		
+		If Gui.FileOperations.File_CancelButton.IsClicked Then
+			Gui.FileOperations.Visible = 0
+			Gui.FileOperations.File_Window.Visible = 0
+			Gui.OnFocus = Null
+		End If
+		
+		'Open Button
+		If Gui.FileOperations.File_Listbox.Selected <> Null And Gui.FileOperations.File_Listbox.Selected.Value = 1 And Gui.ActiveTextbox <> Gui.FileOperations.File_TextBox Then
+			Gui.FileOperations.File_OkButton.Text = "Open"
+			Gui.FileOperations.File_OkButton.Active = 1
+		Else
+			Gui.FileOperations.File_OkButton.Text = Gui.FileOperationMode
+			Gui.FileOperations.File_OkButton.Active = 1
+			If Gui.FileOperations.File_TextBox.Text = "" Then Gui.FileOperations.File_OkButton.Active = 0
+			
+		End If
+		
+		
+		
+		If Gui.FileOperationMode = "Load" Then
+			'DClick Folder
+			For Local i:Gui = Eachin Gui.FileOperations.File_Listbox.Children
+				If i.IsDoubleClicked And i.Value = 1 Then
+					Gui.FileOperations.File_CurrentPath = Gui.FileOperations.File_CurrentPath + "\" + i.Text
+					RenewList()
+				End If
+			Next
+			'Up a level
+			If Gui.FileOperations.File_LevelUp.IsClicked Then
+
+				Local L:String[] = Gui.FileOperations.File_CurrentPath.Split("\")
+				If L.Length < 2 Then Return 0
+				Local NewPath:String
+				For Local i = 0 To L.Length - 2
+					If NewPath = "" Then
+						NewPath = L[i]
+					Else
+						NewPath = NewPath + "\" + L[i]
+					End If
+				Next
+				Gui.FileOperations.File_CurrentPath = NewPath
+
+				RenewList()
+			End If
+			
+			'Click Load on a folder
+			If Gui.FileOperations.File_Listbox.Selected <> Null And Gui.FileOperations.File_OkButton.IsClicked And Gui.FileOperations.File_Listbox.Selected.Value = 1 Then
+				Gui.FileOperations.File_CurrentPath = Gui.FileOperations.File_CurrentPath + "\" + Gui.FileOperations.File_Listbox.Selected.Text
+				RenewList()
+			Elseif Gui.FileOperations.File_OkButton.IsClicked Then
+				Gui.FileOperations.File_Returned = "Yes"
+			End If
+			
+			'Click File
+			For Local i:Gui = Eachin Gui.FileOperations.File_Listbox.Children
+				If i.IsClicked And i.Value = 0 Then
+					Gui.FileOperations.File_TextBox.Text = StripExt(i.Text)
+				End If
+			Next
+			
+		End If
+		
+		
+		If Gui.FileOperationMode = "Save" Then
+			'Check MsgBox
+			If Gui.CheckMsgBox("GUIFILEOPERATIONSSAVEMSGBOX", 1) = 1 Then
+				SaveCheck(1)
+			End If
+			
+			
+			
+			'DClick Folder
+			For Local i:Gui = Eachin Gui.FileOperations.File_Listbox.Children
+				If i.IsDoubleClicked And i.Value = 1 Then
+					Gui.FileOperations.File_CurrentPath = Gui.FileOperations.File_CurrentPath + "\" + i.Text
+					RenewList()
+				End If
+			Next
+			
+			'Click File
+			For Local i:Gui = Eachin Gui.FileOperations.File_Listbox.Children
+				If i.IsClicked And i.Value = 0 Then
+					Gui.FileOperations.File_TextBox.Text = StripExt(i.Text)
+				End If
+			Next
+			
+			'Click Load on a folder
+			If Gui.FileOperations.File_Listbox.Selected <> Null And Gui.FileOperations.File_OkButton.IsClicked And Gui.FileOperations.File_Listbox.Selected.Value = 1 Then
+				Gui.FileOperations.File_CurrentPath = Gui.FileOperations.File_CurrentPath + "\" + Gui.FileOperations.File_Listbox.Selected.Text
+				RenewList()
+			Elseif Gui.FileOperations.File_OkButton.IsClicked Then
+				SaveCheck()
+			End If
+			
+			'Click on TxtBox
+			If Gui.FileOperations.File_TextBox = Gui.OnFocus Then
+				Gui.FileOperations.File_Listbox.Selected = Null
+			End If
+			'Up a level
+			If Gui.FileOperations.File_LevelUp.IsClicked Then
+
+				Local L:String[] = Gui.FileOperations.File_CurrentPath.Split("\")
+				If L.Length < 2 Then Return 0
+				Local NewPath:String
+				For Local i = 0 To L.Length - 2
+					If NewPath = "" Then
+						NewPath = L[i]
+					Else
+						NewPath = NewPath + "\" + L[i]
+					End If
+				Next
+				Gui.FileOperations.File_CurrentPath = NewPath
+
+				RenewList()
+			End If
+			
+			
+			
+		End If
+		
+		
+		
+	End Method
+	
+	
+	
+	Function RenewList()
+	
+		Local FileList:String[] = LoadDir(Gui.FileOperations.File_CurrentPath)
+		
+			
+		Gui.FileOperations.File_Label.Text = Gui.FileOperations.File_CurrentPath
+		Gui.FileOperations.File_OkButton.Text = Gui.FileOperationMode
+		'If Gui.FileOperations.File_TextBox.Text = "" Then Gui.FileOperations.File_OkButton.Active = 0
+		
+		
+		If Gui.FileOperationMode = "Load" Then
+			Gui.FileOperations.File_TextBox.Text = ""
+		End If
+		
+		
+		
+		Gui.FileOperations.File_Listbox.Children = New List<Gui>
+		Gui.FileOperations.File_Listbox.Selected = Null
+		
+		
+		
+		'Folders First
+		
+		For Local i:String = Eachin FileList
+			Local Value = 0
+			If FileType(Gui.FileOperations.File_CurrentPath + "\" + i) = 2 Then
+				Value = 1
+				Local N:Gui = New Gui_ListboxItem(i, Gui.FileOperations.File_Listbox, Value, 1)
+				N.PartOfFileOperations = 1
+			End If
+		Next
+		
+		'Files Second
+		For Local i:String = Eachin FileList
+			Local Value = 0
+			If FileType(Gui.FileOperations.File_CurrentPath + "\" + i) = 1 Then
+				Value = 0
+			
+				If ExtractExt(Gui.FileOperations.File_CurrentPath + "\" + i.ToLower) = Gui.FileOperations.File_Extension.ToLower Or Value = 1 Then
+					Local N:Gui = New Gui_ListboxItem(i, Gui.FileOperations.File_Listbox, Value, 1)
+					N.PartOfFileOperations = 1
+				End If
+			End If
+		Next
+		
+		
+		
+		
+		Gui.FileOperations.File_Listbox.ListboxScrollbar = New Gui_VScrollbar(Gui.FileOperations.File_Listbox.W - 18, 0, 17, Gui.FileOperations.File_Listbox.H - 2, 0, 10, Gui.FileOperations.File_Listbox, 0, 0, 1)
+		Gui.FileOperations.File_Listbox.ListboxScrollbar.PartOfFileOperations = 1
+		Gui.FileOperations.File_Listbox.ListboxScrollbar.MinusButton.PartOfFileOperations = 1
+		Gui.FileOperations.File_Listbox.ListboxScrollbar.PlusButton.PartOfFileOperations = 1
+		Gui.FileOperations.File_Listbox.ListboxScrollbar.SliderButton.PartOfFileOperations = 1
+		
+	End Function
+	
+	
+	
+	Function SaveCheck(Ignore = 0)
+		'Check For Duplicate
+		Local DuplicateFound = 0
+		
+		For Local i:Gui = Eachin Gui.FileOperations.File_Listbox.Children
+			If Ignore = 0 And i.Text = Gui.FileOperations.File_TextBox.Text + "." + Gui.FileOperations.File_Extension Then
+				DuplicateFound = 1
+			End If
+		Next
+		
+		
+		If DuplicateFound = 1 Then
+			Gui.MsgBox("Overwrite", "A file with that name already exists.~nDo you wish to overwrite?", 2, 0, "GUIFILEOPERATIONSSAVEMSGBOX")
+		Else
+			Gui.FileOperations.File_Returned = "Yes"
+			
+		End If
+	End Function
+	
+	
+	
+	
+	
+	Function LoadFile(Extension:String, Id:String)
+		If Gui.FileOperations = Null Then
+			Gui.FileOperations = New Gui_FileOperation()
+			Gui.FileOperations.PartOfFileOperations = 1
+		End If
+		Gui.FileOperations.FileOperationMode = "Load"
+		Gui.FileOperations.Visible = 1
+		Gui.FileOperations.File_Window.Visible = 1
+		Gui.FileOperations.File_Id = Id
+		Gui.FileOperations.File_Returned = ""
+		Gui.FileOperations.File_OkButton.Text = "Load"
+		Gui.FileOperations.File_TextBox.Text = ""
+		Gui.FileOperations.File_TextBox.Active = 0
+		Gui.FileOperations.File_Extension = Extension.Replace(".", "")
+		Gui.FileOperations.File_Window.Text = "Load File - Extension: " + "''." + Gui.FileOperations.File_Extension + "''"
+		Gui.CurrentWindow = Gui.FileOperations.File_Window
+		Gui.FileOperations.SetFocus(Gui.FileOperations.File_Listbox)
+		Gui.FileOperations.File_CurrentPath = CurrentDir()
+		RenewList()
+	End Function
+	
+	
+	
+	Function SaveFile(Extension:String, Id:String)
+		If Gui.FileOperations = Null Then
+			Gui.FileOperations = New Gui_FileOperation()
+			Gui.FileOperations.PartOfFileOperations = 1
+		End If
+		Gui.FileOperations.FileOperationMode = "Save"
+		Gui.FileOperations.Visible = 1
+		Gui.FileOperations.File_Window.Visible = 1
+		Gui.FileOperations.File_Id = Id
+		Gui.FileOperations.File_Returned = ""
+		Gui.FileOperations.File_OkButton.Text = "Save"
+		Gui.FileOperations.File_TextBox.Text = ""
+		Gui.FileOperations.File_TextBox.Active = 1
+		Gui.FileOperations.File_Extension = Extension.Replace(".", "")
+		Gui.FileOperations.File_Window.Text = "Save File - Extension: " + "''." + Gui.FileOperations.File_Extension + "''"
+		Gui.CurrentWindow = Gui.FileOperations.File_Window
+		Gui.FileOperations.SetFocus(Gui.FileOperations.File_TextBox)
+		Gui.FileOperations.File_CurrentPath = CurrentDir()
+		RenewList()
+	End Function
+	
+	
+	Function CheckLoadReturn:String(Id:String)
+		If Gui.FileOperations <> Null And Gui.FileOperations.Visible = 1 And Gui.FileOperationMode = "Load" And Gui.FileOperations.File_Returned <> "" And Gui.FileOperations.File_Id = Id Then
+			Gui.FileOperations.File_Returned = ""
+			Local RtnString:String = Gui.FileOperations.File_CurrentPath + "\" + Gui.FileOperations.File_TextBox.Text + "." + Gui.FileOperations.File_Extension
+			Gui.FileOperations.File_OkButton.IsClicked = 0
+			Gui.FileOperations.Visible = 0
+			Gui.FileOperations.File_Window.Visible = 0
+			Return RtnString
+		Else
+			Return ""
+		End If
+		
+		
+	End Function
+	
+	Function CheckSaveReturn:String(Id:String)
+		If Gui.FileOperations <> Null And Gui.FileOperations.Visible = 1 And Gui.FileOperationMode = "Save" And Gui.FileOperations.File_Returned <> "" And Gui.FileOperations.File_Id = Id Then
+			Gui.FileOperations.File_Returned = ""
+			Local RtnString:String = Gui.FileOperations.File_CurrentPath + "\" + Gui.FileOperations.File_TextBox.Text + "." + Gui.FileOperations.File_Extension
+			Gui.FileOperations.File_OkButton.IsClicked = 0
+			Gui.FileOperations.Visible = 0
+			Gui.FileOperations.File_Window.Visible = 0
+			Return RtnString
+		Else
+			Return ""
+		End If
+		
+		
+	End Function
+	
+	
+End Class
+
+
+
+
+Class Gui_FileOperationsBG Extends guiBasic_Canvas
+	Method Update()
+		
+	End Method
+	
+	Method Draw()
+		SetColor(200, 200, 200)
+		DrawRect(X, Y, W, 40)
+		SetColor(150, 150, 150)
+		DrawLine(X, Y + 40, X + W, Y + 40)
+		
+		
+		
+		SetColor(200, 200, 200)
+		DrawRect(X, Y + H - 70, W, 75)
+		SetColor(150, 150, 150)
+		DrawLine(X, Y + H - 80, X + W, Y + H - 80)
+		
+		
+		SetColor(255, 255, 255)
+	End Method
+	
+End Class

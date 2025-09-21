@@ -1,0 +1,74 @@
+'-- Imports
+Import mojo2
+Import guiBasic2
+Import testGuiElements
+Import testGame
+#if TARGET="html5"
+	#HTML5_APP_ICON=""
+	#HTML5_APP_TITLE="CerberusX - guiBasic"
+	#HTML5_CANVAS_WIDTH=800
+	#HTML5_CANVAS_HEIGHT=480   
+	#HTML5_CANVAS_ANTIALIAS = False	
+	#MOJO_IMAGE_FILTERING_ENABLED	=False									
+#endif
+#if TARGET="glfw"
+	#GLFW_APP_ICON=""
+	#GLFW_WINDOW_TITLE="CerberusX - guiBasic"
+	#GLFW_WINDOW_WIDTH=800
+	#GLFW_WINDOW_HEIGHT=480   
+	#GLFW_WINDOW_RESIZABLE = False	
+	#MOJO_IMAGE_FILTERING_ENABLED	=True									
+#endif
+
+
+'-- FPS Globals
+Global FPS, FPSCounter, FPSMillisecs
+Global BgImage:Image
+Global canv:Canvas 	
+
+
+'-- Main Function
+Function Main()
+	New TestApp()
+End Function
+
+'-- GUI Test App Runtime Methods
+Class TestApp Extends App
+
+	Method OnCreate()
+		SetUpdateRate(60)
+		BgImage = Image.Load("Bg.png",0,0) 
+		FPS = 60
+		FPSCounter = 0
+		FPSMillisecs = Millisecs()+1000
+		canv=New Canvas()
+		Gui.SetCanvas(canv)
+
+		SetupTestElements()
+		SetupGame()
+		
+	End Method
+	
+	Method OnUpdate()
+		GetFPS()
+		UpdateGameGui()
+		Gui.Update()
+		UpdateTestElements()
+	End Method
+	
+	Method OnRender()
+		canv.Clear(0.9,0.9, 0.9)
+		canv.SetColor(1,1,1)
+		Gui.Draw()
+		canv.Flush()
+	End Method
+End Class
+
+Function GetFPS:Void()
+	FPSCounter = FPSCounter + 1
+	If Millisecs() < FPSMillisecs Then Return
+	FPS = FPSCounter
+	FPSCounter = 0
+	FPSMillisecs = Millisecs()+1000
+End Function
+

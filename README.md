@@ -2,14 +2,15 @@
 
 - [x] This guiBasic previously known as MyGui was created by **Christopher Challenger** in 2012.
 - [x] It was converted from MonkeyX to CerberusX by **Memzen** in 2019
-- [x] Add support to Cerberus X Font by **ZoMagic** in 2022 :tada:
+- [x] Add support to Cerberus X Font by **Mag** in 2022 :tada:
+- [x] Add support to Cerberus X Mojo2 by **bosh77** in 2025 :tada:
 
 ![](https://github.com/zomagic/guiBasic/blob/main/guiBasic.gif)
 ![](https://github.com/zomagic/guiBasic/blob/main/screenshot%20of%20examples.jpg)
 
-Unzip the downloaded file and copy the *guiBasic* folder into your CerberusX *modules_ext* folder
+After unzipping the downloaded file, copy the guiBasic folder into the modules_ext directory for use with mojo, and copy the guiBasic2 folder into the same directory for use with mojo2. Do the same with the sample folders: the Examples folder contains mojo examples, while the Examples2 folder contains mojo2 examples.
 
-At the beginning of your code:
+At the beginning of your code (mojo example):
 
 `Import guiBasic`
 

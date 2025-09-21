@@ -1,0 +1,106 @@
+Import guiBasic2
+
+Class Gui_Screen Extends Gui
+
+#REM	
+	Method New()
+		If GuiLoaded = 0 Then CheckLoaded()
+		Self.Type = "Screen"
+		Self.Children = New List<Gui>
+		Self.Text = "Screen"
+		Self.X = 0
+		Self.Y = 0
+		Self.W = DeviceWidth()
+		Self.H = DeviceHeight()
+		
+	End Method
+#END	
+
+	Method New(x:Int = 0, y:Int = 0, w:Int = 0, h:Int = 0)
+		If GuiLoaded = 0 Then CheckLoaded()
+		Self.Type = "Screen"
+		Self.Children = New List<Gui>
+		Self.Text = "Screen"
+		Self.X = x
+		Self.Y = y
+		If w = 0 Self.W = DeviceWidth()
+		If h = 0 Self.H = DeviceHeight()
+		
+	End Method	
+	
+	Method Draw2()
+		'Canvas
+		If Canvas <> Null Then
+			SetScissorWithinSelf( (CanvasX - RealX), (CanvasY - RealY), CanvasW, CanvasH)
+			Canvas.Draw()
+			SetScissor(DrawingX, DrawingY, DrawingW, DrawingH)
+		EndIf
+		
+		'MenuBar
+		SetFont(NormalFont)
+		If HasMenu = 1 Then
+			Local HH = TextHeight("Testing123") + 4
+			Gui.Draw3x3(RealX, RealY, W, HH, 480, 20, 30, 30, 5)
+		End If
+		'TabBar
+		If HasTabs = 1 Then
+			Local HH = TextHeight("Testing123") + 10
+			Local YY = 0
+			If HasMenu Then YY = YY + TextHeight("Testing123") + 4
+			Gui.Draw3x3(RealX, RealY + YY, W, HH, 620, 120, 60, 30, 10)
+		End If
+		
+	End Method
+	
+	
+	Method Update2()
+		'X = 0
+		'Y = 0
+		'W = DeviceWidth()
+		'H = DeviceHeight()
+		
+		'Menu X
+		SetFont(NormalFont)
+		If HasMenu = 1 Then
+			Local XX = 0
+			For Local i:Gui = EachIn Children
+				If i.Type = "Menu" Then
+					If i.RealVisible Then
+						i.X = XX
+						XX = XX + i.W
+					End If
+				End If
+			Next
+			CanvasY = TextHeight("Testing123") + 4
+			CanvasH = H -TextHeight("Testing123") - 4
+		End If
+		
+		'TabX
+		If HasTabs = 1 Then
+			Local XX = 5
+			For Local i:Gui = EachIn Children
+				If i.Type = "Tab" Then
+					If i.RealVisible Then
+						i.X = XX
+						XX = XX + i.W
+					End If
+				End If
+			Next
+			CanvasY = CanvasY + TextHeight("Testing123") + 10
+			CanvasH = CanvasH - TextHeight("Testing123") - 10
+		End If
+		
+		If Canvas <> Null Then
+			Canvas.X = CanvasX
+			Canvas.Y = CanvasY
+			Canvas.W = CanvasW
+			Canvas.H = CanvasH
+			Canvas.Visible = RealVisible
+			Canvas.Active = RealActive
+			Canvas.Update()
+		EndIf
+		
+		
+	End Method
+End Class
+

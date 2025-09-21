@@ -1,0 +1,416 @@
+Import guiBasic2
+'Import test
+Class Gui_Chart Extends Gui
+	
+	
+	Method New(X, Y, W, H, Parent:Gui, ChartType, Data:String, Title:String = "", XLabel:String = "", YLabel:String = "", ContainsKey = 0)
+		Self.Type = "Chart"
+		Self.X = X
+		Self.Y = Y
+		Self.W = W
+		Self.H = H
+		Self.Text = Title
+		Self.ChartType = ChartType
+		Self.ChartData = Data
+		Self.XLabel = XLabel
+		Self.YLabel = YLabel
+		Self.ContainsKey = ContainsKey
+		Self.Parent = Parent
+		Self.Parent.Children.AddLast(Self)
+		Self.Children = New List<Gui>
+		ZOrder(Self.Parent)
+	End Method
+	
+	
+	Method Draw2()
+		'BG
+		SetColor(150, 150, 150)
+		DrawRect(RealX, RealY, W, H)
+		SetColor(255, 255, 255)
+		DrawRect(RealX + 1, RealY + 1, W - 2, H - 2)
+		SetColor(255, 255, 255)
+		
+		Local ChartY = RealY + 10
+		Local ChartX = RealX + 10
+		Local ChartH = H - 20
+		Local ChartW = W - 20
+		'Title
+		SetFont(Gui.TitleFont)
+		If Text <> "" Then
+			ChartY = ChartY + 5 + TextHeight(Text)
+			ChartH = ChartH - 5 - TextHeight(Text)
+			DrawText(Text, RealX + ( (W - TextWidth(Text)) / 2), RealY + 5)
+		End If
+		
+		
+		'Key
+		SetFont(ChartFont)
+		If ContainsKey = 1 Then
+			Local KeyHeight = TextHeight("Testing123") + 20
+			
+			ChartH = ChartH - KeyHeight
+			'SetColor(240, 255, 178)
+			'DrawRect(X + 1, Y + H - KeyHeight - 1, W - 2, KeyHeight - 1)
+			SetColor(50, 50, 50)
+			DrawLine(X + 1, Y + H - KeyHeight - 1, X + W - 1, Y + H - KeyHeight - 1)
+			Local Data:String[] = ChartData.Split(";")
+			Local KeyData:String[] = Data[0].Split(",")
+			
+			Local XCounter = 10
+			For Local Counter = 0 To KeyData.Length - 1
+				SetColor(0, 0, 0)
+				DrawRect(X + XCounter, Y + H - KeyHeight + 10, 11, 11)
+				GetTheColor(Counter)
+				DrawRect(X + XCounter + 1, Y + H - KeyHeight + 11, 9, 9)
+				SetColor(0, 0, 0)
+				DrawText(KeyData[Counter], X + XCounter + 1 + 12, Y + H - KeyHeight + 11)
+				
+				XCounter = XCounter + 10 + 10 + TextWidth(KeyData[Counter])
+			Next
+			
+			SetColor(255, 255, 255)
+		End If
+		
+		
+		'YLabel
+		If YLabel <> "" Then
+			ChartX = ChartX + 5 + TextWidth("W")
+			ChartW = ChartW - 5 - TextWidth("W")
+			Local TextY = 0
+			Local TextLen = TextWidth(YLabel) * 2
+			For Local T = 0 To YLabel.Length - 1
+				DrawText(String.FromChar(YLabel[T]), RealX + 15, ChartY + TextY, 2)
+				TextY = TextY + TextHeight(YLabel[T]) - 4
+			Next
+			
+			SetColor(0, 0, 0)
+			DrawLine(ChartX - 4, ChartY - 5, ChartX - 4, ChartY + ChartH - 8)
+			SetColor(255, 255, 255)
+		End If
+		
+		'XLabel
+		If XLabel <> "" Then
+			ChartH = ChartH - 5 - TextHeight(XLabel)
+			DrawText(XLabel, ChartX + ( (ChartW - TextWidth(XLabel)) / 2), ChartY + ChartH + 6)
+			SetColor(0, 0, 0)
+			DrawLine(ChartX - 8, ChartY + ChartH + 4, ChartX + ChartW, ChartY + ChartH + 4)
+			SetColor(255, 255, 255)
+		End If
+		
+
+		'Chart
+		If ChartType = 0 Then DrawBarChart(ChartX, ChartY, ChartW, ChartH)
+		If ChartType = 1 Then DrawLineChart(ChartX, ChartY, ChartW, ChartH)
+		If ChartType = 2 Then DrawScatterChart(ChartX, ChartY, ChartW, ChartH)
+		If ChartType = 3 Then DrawPieChart(ChartX, ChartY, ChartW, ChartH)
+	End Method
+	
+	
+	
+	Method Update2()
+		
+		
+	End Method
+	
+	
+	Method DrawBarChart(X, Y, W, H)
+		'Split into Bars
+		Local Bars:String[] = ChartData.Split(";")
+		'Get Bar Sizes
+		Local NumberOfBars = Bars.Length
+		If ContainsKey Then NumberOfBars = NumberOfBars - 1
+		Local BarWidth = W / (NumberOfBars + 1)
+		Local BarGap = BarWidth / (NumberOfBars - 1)
+		
+		'GetBarMaximum
+		Local YMaximum, First = 1
+		For Local i:String = EachIn Bars
+			If ContainsKey = 1 And First = 1 Then
+				First = 0
+			Else
+				Local BarTotal
+				Local iSplit:String[] = i.Split(",")
+				For Local ii:String = EachIn i.Split(",")
+					 BarTotal = BarTotal + Int(ii)
+				Next
+				If BarTotal > YMaximum Then YMaximum = BarTotal
+				BarTotal = 0
+			End If
+		Next
+		
+		'BarScale
+		Local BarScale:Float = (H * 1.0) / YMaximum
+		
+		Local XPos = X
+		First = 1
+		For Local B:String = EachIn Bars
+			Local YOff = 0
+			Local ColourCounter = 0
+			If ContainsKey = 1 And First = 1 Then
+				First = 0
+			Else
+				For Local S:String = EachIn B.Split(",")
+					'Draw The Bar
+					GetTheColor(ColourCounter)
+					DrawRect(XPos, Y + H - (Int(S) * BarScale) - YOff, BarWidth, Int(S) * BarScale)
+					'UpdateYPositiom
+					YOff = YOff + (Int(S) * BarScale)
+					ColourCounter = ColourCounter + 1
+				Next
+				'UpdateXPosition
+				XPos = XPos + BarWidth + BarGap
+			End If
+		Next
+		
+		SetColor(255, 255, 255)
+	End Method
+	
+	
+	Method DrawScatterChart(X, Y, W, H)
+		'Split into Lines
+		Local Lines:String[] = ChartData.Split(";")
+
+		'Get Bar Sizes
+		Local NumberOfLines = Lines.Length
+		If ContainsKey Then NumberOfLines = NumberOfLines - 1
+		
+		
+		'GetChartMaximums
+		Local YMaximum, XMaximum, First = 1
+		For Local i:String = EachIn Lines
+			If ContainsKey = 1 And First = 1 Then
+				First = 0
+			Else
+				Local IsX = 1
+				For Local ii:String = EachIn i.Split(",")
+					If IsX = 1 Then
+						If Int(ii) > XMaximum Then XMaximum = Int(ii)
+						IsX = 0
+					Else
+						If Int(ii) > YMaximum Then YMaximum = Int(ii)
+						IsX = 1
+					End If
+					
+				Next
+			End If
+		Next
+	
+		'ChartScale
+		Local ChartYScale:Float = (H * 1.0) / YMaximum
+		Local ChartXScale:Float = (W * 1.0) / XMaximum
+		
+
+		
+		Local ColourCounter = 0
+		
+		First = 1
+		For Local Lin:String = EachIn Lines
+			Local LastX = X, LastY = Y + H
+			If ContainsKey = 1 And First = 1 Then
+				First = 0
+			Else
+				Local IsX = 1
+				Local XCoord = 0, YCoord = 0
+				For Local L:String = EachIn Lin.Split(",")
+					If IsX = 1 Then
+						XCoord = (Int(L) * ChartXScale) + X
+						IsX = 0
+					Else
+						YCoord = Y + H - (Int(L) * ChartYScale)
+						GetTheColor(ColourCounter)
+						DrawLine(XCoord - 4, YCoord, XCoord + 4, YCoord)
+						DrawLine(XCoord, YCoord - 4, XCoord, YCoord + 4)
+						IsX = 1
+					End If
+				Next
+				ColourCounter = ColourCounter + 1
+			End If
+		Next
+		
+		
+		
+		
+		
+		
+	End Method
+	
+	
+	
+	Method DrawLineChart(X, Y, W, H)
+		'Split into Lines
+		Local Lines:String[] = ChartData.Split(";")
+
+		'Get Bar Sizes
+		Local NumberOfLines = Lines.Length
+		If ContainsKey Then NumberOfLines = NumberOfLines - 1
+		
+		
+		'GetChartMaximums
+		Local YMaximum, XMaximum, First = 1
+		For Local i:String = EachIn Lines
+			If ContainsKey = 1 And First = 1 Then
+				First = 0
+			Else
+				Local IsX = 1
+				For Local ii:String = EachIn i.Split(",")
+					If IsX = 1 Then
+						If Int(ii) > XMaximum Then XMaximum = Int(ii)
+						IsX = 0
+					Else
+						If Int(ii) > YMaximum Then YMaximum = Int(ii)
+						IsX = 1
+					End If
+					
+				Next
+			End If
+		Next
+	
+		'ChartScale
+		Local ChartYScale:Float = (H * 1.0) / YMaximum
+		Local ChartXScale:Float = (W * 1.0) / XMaximum
+		
+
+		
+		Local ColourCounter = 0
+		
+		First = 1
+		For Local Lin:String = EachIn Lines
+			Local LastX = X, LastY = Y + H
+			If ContainsKey = 1 And First = 1 Then
+				First = 0
+			Else
+				For Local XX = 0 To XMaximum
+					Local IsX = 1
+					Local Found = 0, XCoord = 0, YCoord = 0
+					For Local L:String = EachIn Lin.Split(",")
+						
+						If IsX = 1 Then
+							If Int(L) = XX Then
+								Found = 1
+								XCoord = (Int(L) * ChartXScale) + X
+							End If
+							IsX = 0
+						Else
+							If Found = 1 Then
+								YCoord = Y + H - (Int(L) * ChartYScale)
+								GetTheColor(ColourCounter)
+								DrawLine(LastX, LastY, XCoord, YCoord)
+								
+								LastX = XCoord
+								LastY = YCoord
+								Found = 0
+							End If
+							IsX = 1
+						End If
+					Next
+					
+				Next
+				ColourCounter = ColourCounter + 1
+			End If
+		Next
+		
+		
+		
+		
+		
+		
+	End Method
+	
+	
+	Method DrawPieChart(X, Y, W, H)
+		'Split into Segments
+		Local Segments:String[] = ChartData.Split(";")
+		
+		'Get Segment Data
+		Local NumberOfSegments = Segments.Length
+		If ContainsKey Then NumberOfSegments = NumberOfSegments - 1
+	
+		
+		'GetPieTotal & Section Total
+		Local SegTotal:Float[NumberOfSegments]
+		Local Segs:String[NumberOfSegments]
+		
+		Local Total:Float = 0.0, First = 1, Counter = 0
+		For Local i:String = EachIn Segments
+			If ContainsKey = 1 And First = 1 Then
+				First = 0
+				Counter = 0
+			Else
+				Segs[Counter] = i
+				For Local ii:String = EachIn i.Split(",")
+					Total = Total + Int(ii)
+					SegTotal[Counter] = SegTotal[Counter] + Int(ii)
+				Next
+				Counter = Counter + 1
+			End If
+				
+		Next
+		
+
+		'Draw The Segments
+		Local AngleCounter:Float = 90, ColourCounter = 0
+		
+		For Local i = 0 To SegTotal.Length - 1
+			Local Angle:Float = (SegTotal[i] / (Total * 1.0)) * 360.0
+			GetTheColor(ColourCounter)
+			Local Radius = W / 2
+			If H / 2 < Radius Then Radius = H / 2
+			DrawPie(X + (W / 2), Y + (H / 2), Radius, Radius, AngleCounter, AngleCounter - Angle, 12)
+			AngleCounter = AngleCounter - Angle
+			ColourCounter = ColourCounter + 1
+		Next
+		
+	End Method
+	
+	
+	
+	
+	
+	
+	
+	Function DrawPie:Void(x:Float, y:Float, xRadius:Float, yRadius:Float, aStart:Float = 0.0, aEnd:Float = 360.0, segments:Int = 8)
+		Local points:Float[ (segments * 2) + 4]
+		points[0] = x
+		points[1] = y
+		points[2] = x + Cos(aStart) * xRadius
+		points[3] = y - Sin(aStart) * yRadius
+		Local div:Float = (aEnd - aStart) / segments
+		For Local i:Int = 1 To segments
+			points[ (i + 1) * 2] = x + Cos(aStart + (i * div)) * xRadius
+			points[ ( (i + 1) * 2) + 1] = y - Sin(aStart + (i * div)) * yRadius
+		Next
+		DrawPoly(points)
+	End Function
+	
+	
+
+
+	Function GetTheColor(Counter)
+		If Counter = 0 Then SetColor(27, 157, 222); Return 'Blue
+		If Counter = 1 Then SetColor(212, 223, 50); Return 'Yellow
+		If Counter = 2 Then SetColor(142, 196, 65); Return 'Green
+		If Counter = 3 Then SetColor(245, 151, 0); Return 'Orange
+		If Counter = 4 Then SetColor(27, 222, 205); Return 'Turq
+		If Counter = 5 Then SetColor(245, 49, 0); Return 'Red
+		If Counter = 6 Then SetColor(33, 75, 100); Return ' Dark Blue
+		If Counter = 7 Then SetColor(241, 77, 151); Return 'Pink
+		If Counter = 8 Then SetColor(37, 117, 22); Return 'Dark Green
+		If Counter = 9 Then SetColor(143, 0, 245); Return 'Purple
+		If Counter = 10 Then SetColor(7, 137, 202); Return 'Blue
+		If Counter = 11 Then SetColor(192, 203, 30); Return 'Yellow
+		If Counter = 12 Then SetColor(122, 176, 45); Return 'Green
+		If Counter = 13 Then SetColor(225, 131, 0); Return 'Orange
+		If Counter = 14 Then SetColor(0, 202, 185); Return 'Turq
+		If Counter = 15 Then SetColor(225, 29, 0); Return 'Red
+		If Counter = 16 Then SetColor(13, 55, 80); Return ' Dark Blue
+		If Counter = 17 Then SetColor(221, 57, 131); Return 'Pink
+		If Counter = 18 Then SetColor(17, 97, 2); Return 'Dark Green
+		If Counter = 19 Then SetColor(123, 0, 225); Return 'Purple
+		
+		SetColor(0, 0, 0)
+		
+		
+	End Function
+End Class
+
+

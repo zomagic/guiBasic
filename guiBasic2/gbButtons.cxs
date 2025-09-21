@@ -1,0 +1,406 @@
+Import guiBasic2
+
+Class Gui_Button Extends Gui
+	
+	
+	Method New(X, Y, W, H, Text:String, Parent:Gui, Style = 0)
+		Self.Type = "Button"
+		Self.X = X * Gui.FeScaleX
+		Self.Y = Y * Gui.FeScaleY
+		Self.W = W * Gui.FeScaleX
+		Self.H = H * Gui.FeScaleY
+		Self.Text = Text
+		If Style < 0 Then Style = 0
+		If Style > 0 Then Style = 1
+		Self.Style = Style
+		Self.Parent = Parent
+		Self.Parent.Children.AddLast(Self)
+		Self.Children = New List<Gui>
+		ZOrder(Self.Parent)
+	End Method
+	
+	
+	Method Draw2()
+		Local TempStyle = Style
+		If TempStyle < 0 Then TempStyle = 0
+		If TempStyle > 0 Then TempStyle = 1
+		Local AtlasX = (310 - (TempStyle * 40))
+		Local AtlasY = 20
+		
+		If Gui.Over = Self Then AtlasY = 50
+		If Gui.Down = Self Then AtlasY = 80
+		If Self.RealActive = 0 Then AtlasY = 110
+				
+		Gui.Draw3x3(Gui.FeScaleX * RealX, Gui.FeScaleY * RealY, W, H, AtlasX, AtlasY, 30, 30, 10)
+		
+		'######
+		SetColor 10, 10, 10
+		
+		SetFont(NormalFont)
+		Local TextX = Gui.FeScaleX * RealX + ( (W - TextWidth(Text)) / 2.0)
+		Local TextY = Gui.FeScaleY * RealY + ( (H - TextHeight(Text)) / 2.0)
+		Local OldAlpha:Float = GetAlpha()
+		If Self.RealActive = 0 Then SetAlpha(GetAlpha() -0.6)
+		If TempStyle = 0 Then
+			SetFont(NormalFont)
+			DrawText(Text, TextX, TextY)
+		Else
+			SetFont(NormalFontInv)
+			DrawText(Text,  TextX,  TextY)
+		End If
+		SetAlpha(OldAlpha)
+		
+		
+	End Method
+	
+	
+	
+	Method Update2()
+
+	End Method
+	
+	
+	
+	
+End Class
+
+
+
+Class Gui_ImgButton Extends Gui
+
+	Method New(X, Y, W, H, Img:Image, Parent:Gui, ImgX = 0, ImgY = 0, ImgW = 0, ImgH = 0)
+		Self.Type = "ImgButton"
+		Self.X = X
+		Self.Y = Y
+		Self.W = W
+		Self.H = H
+		Self.ButtonImg = Img
+		Self.ButtonImgX = ImgX
+		Self.ButtonImgY = ImgY
+		Self.ButtonImgW = ImgW
+		Self.ButtonImgH = ImgH
+		If Self.ButtonImgW = 0 Then Self.ButtonImgW = Self.ButtonImg.Width() / 4
+		If Self.ButtonImgH = 0 Then Self.ButtonImgH = Self.ButtonImg.Height()
+		
+		Self.Parent = Parent
+		Self.Parent.Children.AddLast(Self)
+		Self.Children = New List<Gui>
+		
+		ZOrder(Self.Parent)
+	End Method
+	
+	
+	Method Draw2()
+		Local AtlasX = ButtonImgX
+		Local AtlasY = ButtonImgY
+			
+		If Gui.Over = Self Then AtlasX = ButtonImgX + ButtonImgW
+		If Gui.Down = Self Then AtlasX = ButtonImgX + (ButtonImgW * 2)
+		If Self.RealActive = 0 And IsResizeButton = 0 Then AtlasX = ButtonImgX + (ButtonImgW * 3)
+		
+		Local OldAlpha:Float = GetAlpha()
+		If IsResizeButton = 1 And Self.RealActive = 0 Then SetAlpha(GetAlpha() -0.7)
+		
+		If IsMinimiseButton = 0 Then
+			DrawImageRect(ButtonImg, RealX, RealY, AtlasX, AtlasY, ButtonImgW, ButtonImgH, 0, (W / (ButtonImgW * 1.0)), (H / (ButtonImgH * 1.0)))
+		End If
+		
+		'Adjust Form Minimise Button Rotation
+		If IsMinimiseButton = 1 Then
+			If Parent.Minimising = 0 Or MinimiseButtonTurn = 0 Then
+				DrawImageRect(ButtonImg, RealX, RealY, AtlasX, AtlasY, ButtonImgW, ButtonImgH, 0, (W / (ButtonImgW * 1.0)), (H / (ButtonImgH * 1.0)))
+			Else
+				Local Rotation = ( (Parent.DrawingH / (Parent.H * 1.0)) * 180.0) + 180
+				Local XX = RealX + ( (TitleBarHeight - 10) / 2)
+				Local YY = RealY + ( (TitleBarHeight - 10) / 2)
+				If Self.RealActive = 0 Then
+					DrawImage(Images[3], XX, YY, Rotation, (TitleBarHeight - 10.0) / 30, (TitleBarHeight - 10.0) / 30)
+				ElseIf Gui.Down = Self Then
+					DrawImage(Images[2], XX, YY, Rotation, (TitleBarHeight - 10.0) / 30, (TitleBarHeight - 10.0) / 30)
+				ElseIf Gui.Over = Self Then
+					DrawImage(Images[1], XX, YY, Rotation, (TitleBarHeight - 10.0) / 30, (TitleBarHeight - 10.0) / 30)
+				Else
+					DrawImage(Images[0], XX, YY, Rotation, (TitleBarHeight - 10.0) / 30, (TitleBarHeight - 10.0) / 30)
+				EndIf
+				
+			End If
+		End If
+		
+		SetAlpha(OldAlpha)
+	End Method
+	
+	
+	
+	Method Update2()
+
+	End Method
+	
+	
+End Class
+
+
+
+Class Gui_Tickbox Extends Gui
+	
+	Method New(X, Y, H, Text:String, Parent:Gui, Value = 0)
+		Self.Type = "Tickbox"
+		Self.X = X
+		Self.Y = Y
+		SetFont(NormalFont)
+		Self.W = H + 5 + TextWidth(Text)
+		Self.H = H
+		Self.Text = Text
+		Self.Value = Value
+		Self.Parent = Parent
+		Self.Parent.Children.AddLast(Self)
+		Self.Children = New List<Gui>
+		ZOrder(Self.Parent)
+	End Method
+	
+	
+	Method Draw2()
+		If IsCell=1 Then SetScissorWithinSelf(0,0,W,H)
+		Local AtlasX = 140
+		Local AtlasY
+		If Value < 1 Then AtlasY = 280
+		If Value > 0 Then AtlasY = 250
+		If Gui.Over = Self Then AtlasX = 170
+		If Gui.Down = Self Then AtlasX = 200
+		If Self.RealActive = 0 Then AtlasX = 230
+
+		DrawImageRect(Gui.Atlas, RealX, RealY, AtlasX, AtlasY, 30, 30, 0, H / 30.0, H / 30.0)
+		SetFont(NormalFont)
+		Local TextY = RealY + ( (H - TextHeight(Text)) / 2.0)
+		Local OldAlpha:Float = GetAlpha()
+		If Self.RealActive = 0 Then SetAlpha(GetAlpha() -0.6)
+		DrawText(Text, RealX + H + 5, TextY)
+		SetAlpha(OldAlpha)
+		
+		
+	End Method
+	
+	
+	
+	Method Update2()
+		If Gui.Clicked = Self Then
+			If Value = 0 Then
+				Value = 1
+			Else
+				Value = 0
+			End If
+		End If
+		SetFont(NormalFont)
+		W = H + 5 + (TextWidth(Text))
+		If Text = "" Then W = H
+		
+	End Method
+	
+	
+	
+	
+End Class
+
+
+
+Class Gui_Radio Extends Gui
+	
+	Method New(X, Y, H, Text:String, Parent:Gui, Group = 0, StartSelected = 0)
+		Self.Type = "Radio"
+		Self.X = X
+		Self.Y = Y
+		SetFont(NormalFont)
+		Self.W = H + 5 + TextWidth(Text)
+		Self.H = H
+		Self.RadioGroup = Group
+		Self.Text = Text
+		Self.IsSelected = StartSelected
+		Self.Parent = Parent
+		Self.Parent.Children.AddLast(Self)
+		Self.Children = New List<Gui>
+		ZOrder(Self.Parent)
+
+		If IsSelected > 0 Then
+			For Local i:Gui = Eachin Parent.Children
+				If i.Type = "Radio" And i.RadioGroup = Group Then
+					If i <> Self And i.IsSelected > 0 Then i.IsSelected = 0
+				End If
+			Next
+		End If		
+				
+	End Method
+	
+	
+	Method Draw2()
+		Local AtlasX = 140
+		Local AtlasY
+		If IsSelected < 1 Then AtlasY = 210
+		If IsSelected > 0 Then AtlasY = 180
+		
+		If Gui.Over = Self Then AtlasX = 170
+		If Gui.Down = Self Then AtlasX = 200
+		If Self.RealActive = 0 Then AtlasX = 230
+
+		DrawImageRect(Gui.Atlas, RealX, RealY, AtlasX, AtlasY, 30, 30, 0, H / 30.0, H / 30.0)
+		SetFont(NormalFont)
+		Local TextY = RealY + ( (H - TextHeight(Text)) / 2.0)
+		Local OldAlpha:Float = GetAlpha()
+		If Self.RealActive = 0 Then SetAlpha(GetAlpha() -0.6)
+		DrawText(Text, RealX + H + 5, TextY)
+		SetAlpha(OldAlpha)
+		
+		
+	End Method
+	
+	
+	
+	Method Update2()
+		If Gui.Clicked = Self Then
+			If IsSelected < 1 Then
+				For Local i:Gui = Eachin Parent.Children
+					If i.Type = "Radio" And i.RadioGroup = Self.RadioGroup Then
+						If i <> Self And i.IsSelected > 0 Then i.IsSelected = 0
+					End If
+				Next
+				IsSelected = 1
+			End If			
+		End If
+		SetFont(NormalFont)
+		W = H + 5 + (TextWidth(Text))
+		
+	End Method
+	
+	
+	
+End Class
+
+
+
+Class Gui_SlideButton Extends Gui
+	Method New(X, Y, W, H, Text1:String, Text2:String, Parent:Gui, Value = 0)
+		Self.Type = "SlideButton"
+		Self.X = X
+		Self.Y = Y
+		Self.W = W
+		Self.H = H
+		Self.Text1 = Text1
+		Self.Text2 = Text2
+		Self.Value = Value
+		Self.Parent = Parent
+		Self.Parent.Children.AddLast(Self)
+		Self.Children = New List<Gui>
+		Self.SlideButtonButton = New Gui_SlideButtonButton(Self)
+		ZOrder(Self.Parent)
+	End Method
+	
+	Method Draw2()
+		Local AtlasX = 560
+		Local AtlasY = 20
+		If RealActive = 0 Then AtlasX = 620
+		Local OldAlpha:Float = GetAlpha()
+		
+		'Left
+		SetScissorWithinSelf(0, 0, SlideButtonButton.X + (SlideButtonButton.W / 2), H)
+		Gui.Draw3x3(RealX, RealY, W, H, AtlasX, AtlasY, 30, 30, 10)
+		SetFont(NormalFontInv)
+		Local TextY = RealY + ( (H - TextHeight(Text1)) / 2.0)
+		If Self.RealActive = 0 Then SetAlpha(GetAlpha() -0.6)
+		If RealActive = 1 Then
+			SetFont(NormalFontInv)
+			DrawText(Text1, RealX + 5, TextY)
+		Else
+			SetFont(NormalFont)
+			DrawText(Text1, RealX + 5, TextY)
+		End If
+		SetAlpha(OldAlpha)
+		
+		'Right
+		SetScissorWithinSelf(SlideButtonButton.X + (SlideButtonButton.W / 2), 0, W - (SlideButtonButton.X + (SlideButtonButton.W / 2)), H)
+		Gui.Draw3x3(RealX, RealY, W, H, AtlasX + 30, AtlasY, 30, 30, 10)
+		SetFont(NormalFont)
+		TextY = RealY + ( (H - TextHeight(Text2)) / 2.0)
+		If Self.RealActive = 0 Then SetAlpha(GetAlpha() -0.6)
+		DrawText(Text2, RealX + W - 5 - (TextWidth(Text2)), TextY)
+		SetAlpha(OldAlpha)
+	End Method
+	
+	Method Update2()
+		If Value > 1 Then Value = 1
+		If Value < 0 Then Value = 0
+		
+		If SlideButtonButton.Moving = 0 Then
+			If Value = 0 Then
+				SlideButtonButton.X = 0
+			Else
+				SlideButtonButton.X = W - SlideButtonButton.W
+			End If
+		End If
+		
+		SlideButtonButton.Y = 0
+		SlideButtonButton.W = H*1.5
+		SlideButtonButton.H = H
+		
+		
+		If Gui.Clicked = Self Then
+			If Value = 0 Then
+				Value = 1
+			Else
+				Value = 0
+			End If
+		End If
+	End Method
+End Class
+
+
+Class Gui_SlideButtonButton Extends Gui
+	Method New(Parent:Gui)
+		Self.Type = "SlideButtonButton"
+		Self.X = 0
+		Self.Y = 0
+		Self.W = Parent.W / 2
+		Self.H = Parent.H
+		Self.Parent = Parent
+		Self.Parent.Children.AddLast(Self)
+		Self.Children = New List<Gui>		
+	End Method
+	
+	Method Draw2()
+		Local AtlasX = 560
+		Local AtlasY = 50
+
+		If Gui.Over = Self Then AtlasX = 590
+		If Gui.Down = Self Then AtlasX = 620
+		If Self.RealActive = 0 Then AtlasX = 650
+
+		Gui.Draw3x3(RealX, RealY, W, H, AtlasX, AtlasY, 30, 30, 7)
+	End Method
+	
+	
+	Method Update2()
+	
+		
+		If Gui.Down = Self And TouchY() < RealY + Gui.TitleBarHeight And Moving = 0 Then
+			Moving = 1
+			MovingX = TouchX() -X
+			MovingY = TouchY() -Y
+		End If
+		
+		If TouchDown() = 0 Then Moving = 0
+		
+		If Moving = 1 Then
+			X = TouchX() -MovingX
+			Y = TouchY() -MovingY
+				
+			If X < 0 Then X = 0
+			If X > Parent.W - W Then X = Parent.W - W
+			
+			If X > ( (Parent.W - W) / 2.0) Then
+				Parent.Value = 1
+			Else
+				Parent.Value = 0
+			End If
+			
+		End If
+		
+	End Method
+End Class
+

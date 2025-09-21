@@ -1,0 +1,164 @@
+Import guiBasic2
+
+Class Gui_DropDown Extends Gui
+
+	Method New(X, Y, W, H, Parent:Gui, StartText:String)
+		Self.Type = "DropDown"
+		Self.X = X
+		Self.Y = Y
+		Self.W = W
+		Self.H = H
+		Self.Text = StartText
+		Self.Parent = Parent
+		Self.Parent.Children.AddLast(Self)
+		Self.Children = New List<Gui>
+		ZOrder(Self.Parent)
+		Self.Minimised = 1
+		Self.GuiCanvas = New Gui_Canvas(Self)
+		Self.SeperatedCanvas = 1
+	End Method
+	
+	
+	Method Draw2()
+		If IsCell=1 Then SetScissorWithinSelf(0,0,W,H)
+		Local AtlasX = 390
+		Local AtlasY = 20
+		
+		If Gui.Over = Self Then AtlasY = 50
+		If Gui.Down = Self Then AtlasY = 80
+		If Self.Minimised = 0 Then AtlasY = 110
+		If Self.RealActive = 0 Then AtlasY = 140
+		
+		'Box
+		If Self.IsCell = 0 Then Gui.Draw3x3(RealX, RealY, W - (H * 0.5), H, AtlasX, AtlasY, 20, 30, 5)
+
+		'Text
+		SetFont(NormalFont)
+		Local TextY = RealY + ( (H - TextHeight(Text)) / 2.0)
+		Local OldAlpha:Float = GetAlpha()
+		If Self.RealActive = 0 Then SetAlpha(GetAlpha() -0.6)
+		DrawText(Text, RealX + 5, TextY)
+		SetAlpha(OldAlpha)
+		
+		'Button
+		If Self.IsCell = 0 Then DrawImageRect(Gui.Atlas, RealX + W - H, RealY, AtlasX + 20, AtlasY, 30, 30, 0, H / 30.0, H / 30.0)
+		If Self.IsCell = 1 Then DrawImageRect(Gui.Atlas, RealX + W - H + 5, RealY + 5, AtlasX + 20, AtlasY, 30, 30, 0, (H - 10) / 30.0, (H - 10) / 30.0)
+	End Method
+
+	Method Update2()
+		If Gui.Clicked = Self Then
+			If Minimised = 1 Then
+				Minimised = 0
+				GuiCanvas.Visible = 1
+				For Local i:Gui = EachIn Children
+					If i.Type = "DropDownItem" And i.Visible = 1 And i.Active = 1 Then
+						OnFocus = i
+						Exit	
+					EndIf
+				Next
+			Else
+				Minimised = 1
+				GuiCanvas.Visible = 0
+			End If
+		End If
+		
+		'Canvas Update
+		If Self.RealVisible = 0 Then GuiCanvas.Visible = 0
+		GuiCanvas.CanvasX = RealX
+		GuiCanvas.CanvasY = DrawingY + DrawingH
+		GuiCanvas.CanvasW = ChildMaxWidth
+		GuiCanvas.CanvasH = ChildMaxHeight * Children.Count
+		
+		'Within Screen
+		If GuiCanvas.CanvasX + GuiCanvas.CanvasW > DeviceWidth() Then GuiCanvas.CanvasX = DeviceWidth() -GuiCanvas.CanvasW
+		If GuiCanvas.CanvasY + GuiCanvas.CanvasH > DeviceHeight() Then GuiCanvas.CanvasY = DeviceHeight() -GuiCanvas.CanvasH
+		
+		If GuiCanvas.CanvasX < 0 Then GuiCanvas.CanvasX = 0
+		If GuiCanvas.CanvasY < 0 Then GuiCanvas.CanvasY = 0
+				
+	End Method
+	
+End Class
+
+
+
+
+Class Gui_DropDownItem Extends Gui
+
+	Method New(Text:String, Parent:Gui, Value = 0)
+		Self.Type = "DropDownItem"
+		Self.Text = Text
+		Self.Value = Value
+		Self.Parent = Parent
+		Self.Parent.Children.AddLast(Self)
+		Self.Children = New List<Gui>
+		SetFont(NormalFont)
+		Self.H = TextHeight("Test123") + 4
+		Self.Parent.ChildMaxHeight = Self.H
+		If (TextWidth(Text) + 4) > Parent.ChildMaxWidth Then Parent.ChildMaxWidth = (TextWidth(Text) + 4)
+		If Parent.ChildMaxWidth < Self.Parent.W Then Parent.ChildMaxWidth = Self.Parent.W
+		Self.RealVisible = 1
+		ZOrder(Self.Parent)
+		Self.W = Parent.ChildMaxWidth
+		
+	End Method
+	
+	
+	Method Draw2()
+		Local AtlasX = 440
+		Local AtlasY = 20
+		
+		If Gui.Over = Self Then AtlasY = 50
+		If Gui.Down = Self Then AtlasY = 80
+		If Self.RealActive = 0 Then AtlasY = 110
+		
+		'Box
+		Gui.Draw3x3(RealX, RealY, W, H, AtlasX + 3, AtlasY + 3, 24, 24, 5)
+
+		'Text
+		SetFont(NormalFont)
+		Local TextY = RealY + ( (H - TextHeight(Text)) / 2.0)
+		Local OldAlpha:Float = GetAlpha()
+		If Self.Active = 0 Then SetAlpha(GetAlpha() -0.6)
+		
+		If RealActive = 1 Then
+			If Gui.Over = Self Or Gui.Down = Self Then
+				SetFont(NormalFontInv)
+				DrawText(Text, RealX + 2, TextY)
+			Else
+				SetFont(NormalFont)
+				DrawText(Text, RealX + 2, TextY)
+			End If
+		Else
+			SetFont(NormalFont)
+			DrawText(Text, RealX + 2, TextY)
+		End If
+		SetAlpha(OldAlpha)
+		
+		
+	End Method
+
+	Method Update2()
+		SetFont(NormalFont)
+		Local WW = TextWidth(Text) + 4
+		If W < WW Then
+			W = WW
+			Parent.ChildMaxWidth = WW
+		End If
+			
+		If Gui.Clicked = Self Then
+			Parent.Text = Text
+			Parent.Value = Value
+			Parent.Minimised = 1
+			Parent.GuiCanvas.Visible = 0
+			Parent.Selected = Self
+			OnFocus = Self.Parent
+		EndIf
+		
+		
+		
+		
+	End Method
+	
+End Class
+

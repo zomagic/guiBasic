@@ -1,0 +1,816 @@
+Import guiBasic2
+Import msxcompilercx
+Import newlayout
+
+
+Class Gui_TextField Extends Gui
+	
+	Method New(X, Y, W, H, Parent:Gui, Text:String = "", AllowNumbers = 1, AllowLetters = 1, AllowSymbols = 1, MaxLength = 0)
+		Self.Type = "TextField"
+		Self.X = X
+		Self.Y = Y
+		Self.W = W
+		Self.H = H
+		Self.AllowNumbers = AllowNumbers
+		Self.AllowLetters = AllowLetters
+		Self.AllowSymbols = AllowSymbols
+		Self.MaxLength = MaxLength
+		Self.Text = Text
+		Self.Parent = Parent
+		Self.Parent.Children.AddLast(Self)
+		Self.Children = New List<Gui>
+		ZOrder(Self.Parent)
+		
+	End Method
+	
+	
+	Method Draw2()
+		If IsCell=1 Then SetScissorWithinSelf(0,0,W,H)
+		Local AtlasX = 350
+		Local AtlasY = 20
+		If Gui.Over = Self Then AtlasY = 50
+		If Gui.Down = Self Then AtlasY = 80
+		If Gui.ActiveTextbox = Self Then AtlasY = 110
+		If Self.RealActive = 0 Then AtlasY = 140
+
+		If Self.IsCell = 0 Then Gui.Draw3x3(RealX, RealY, W, H, AtlasX, AtlasY, 30, 30, 10)
+		
+		SetFont(NormalFont)
+		
+		Local TextY = RealY + ( (H - TextHeight(Text)) / 2.0)
+		Local TextX = (RealX + 5)
+		
+		If Gui.ActiveTextbox = Self Then
+			TextX = TextX - TextFieldOffset
+			'Adjust if curstor is out of box
+			
+			Local BeforeText:String = Text[ .. CursorLocation]
+			Local CurX = RealX + 6 + TextWidth(BeforeText + "Testing123") - TextWidth("Testing123")
+			
+			
+			If CurX - TextFieldOffset > (RealX + 5) + W - 17 Then TextFieldOffset = (CurX - ( (RealX + 5) + W - 17))
+			If CurX - TextFieldOffset < (RealX + 5 + 10) Then TextFieldOffset = CurX - ( (RealX + 5 + 10))
+			If TextFieldOffset < 0 Then TextFieldOffset = 0
+		
+		End If
+			
+
+		'Draw Text
+		Local OldAlpha:Float = GetAlpha()
+		If Self.RealActive = 0 Then SetAlpha(GetAlpha() -0.6)
+		
+		'######
+		SetColor 10, 10, 10
+		DrawText(Text, TextX, TextY)
+		SetAlpha(OldAlpha)
+		
+		
+		'Draw Cursor ######
+		If Gui.ActiveTextbox = Self Then
+			If CursorOn = 1 Or KeyIsdown = 1 Then
+				Local BeforeText:String = Text[ .. CursorLocation]
+				Local XX = RealX + 6 + TextWidth(BeforeText + "Testing123") - TextWidth("Testing123")
+				'If TextWidth(BeforeText) > W - 10 Then
+				'	XX = XX - (TextWidth(BeforeText) - W) - 6
+				'End If
+				XX = XX - TextFieldOffset
+				SetColor(0, 0, 0)
+				SetAlpha(1)
+				DrawLine(XX, TextY + 3, XX, TextY + TextHeight(Text) - 2)
+				SetAlpha(OldAlpha)
+				SetColor(255, 255, 255)
+			End If
+			
+			If CurserTimer < Millisecs() Then
+				If CursorOn = 1 Then
+					CursorOn = 0
+				Else
+					CursorOn = 1
+				End If
+				CurserTimer = Millisecs() +500
+			End If
+		End If
+		
+	End Method
+	
+	
+	Method Update2()
+		'Max Length
+		
+		If MaxLength > 0 And Text.Length > MaxLength Then Text = Text[ .. MaxLength]
+		
+		TextFieldOffset = 0
+		
+		'Clicked
+		SetFont(NormalFont)
+		If Gui.Clicked = Self Then
+			If Gui.ActiveTextbox <> Self Then
+				Gui.ActiveTextbox = Self
+				Gui.CursorLocation = Text.Length
+				'TextFieldOffset
+				Local BeforeText:String = Text[ .. CursorLocation]
+				
+				Local CurX = RealX + 6 + TextWidth(BeforeText + "Testing123") - TextWidth("Testing123")
+				If CurX > (RealX + 5) + W - 12 Then TextFieldOffset = (CurX - ( (RealX + 5) + W - 12))
+		
+				
+				'If CurX > TextX + W - 12 Then TextX = TextX - (CurX - (TextX + W - 12))
+			Else
+
+				'Adjust curstor if clicked once active
+				Local Found = 0
+				For Local i = 0 To Text.Length - 1
+					If TextWidth(Text[ .. i] + "NONE") + RealX + 6 - TextWidth("NONE") + 6 - TextFieldOffset > TouchX() Then
+						CursorLocation = (i)
+						Found = 1
+						Exit
+					End If
+				Next
+				If Found = 0 Then CursorLocation = Text.Length
+				
+			End If
+		End If
+		
+		If Gui.ActiveTextbox = Self Then
+			GetFieldText()
+			isontextbox = 1
+		endif
+
+	End Method
+	
+	
+	Method GetFieldText()
+		Local MaxLength = Self.MaxLength
+		If MaxLength < 1 Then MaxLength = 900000
+		'Arrow Adjust
+		If KeyHit(KEY_LEFT) And CursorLocation > 0 Then
+			CursorLocation = CursorLocation - 1
+		End If
+			
+		If KeyHit(KEY_RIGHT) And CursorLocation < ActiveTextbox.Text.Length Then
+			CursorLocation = CursorLocation + 1
+		End If
+							
+		If KeyDown(KEY_LEFT) And KeyIsdown = 0 Then
+			KeyIsdown = 1
+			KeydownTimer = Millisecs() +700
+		Elseif KeyDown(KEY_LEFT) And KeyIsdown = 1 Then
+			If KeydownTimer < Millisecs() Then
+				If CursorLocation > 0 Then
+					CursorLocation = CursorLocation - 1
+				End If
+				KeydownTimer = Millisecs() +50
+			End If
+		Elseif KeyDown(KEY_RIGHT) And KeyIsdown = 0 Then
+			KeyIsdown = 1
+			KeydownTimer = Millisecs() +700
+		Elseif KeyDown(KEY_RIGHT) And KeyIsdown = 1 Then
+			If KeydownTimer < Millisecs() Then
+				If CursorLocation < ActiveTextbox.Text.Length Then
+					CursorLocation = CursorLocation + 1
+						
+				End If
+				KeydownTimer = Millisecs() +50
+			End If
+		Else
+			KeyIsdown = 0
+		End If
+		
+		'Error Text
+		'==INPUT==
+		Local BeforeText:String = ActiveTextbox.Text[ .. CursorLocation]
+		Local AfterText:String = ActiveTextbox.Text[CursorLocation ..]
+
+		Local C = GetChar()
+			
+		If C <> 0 And Self.Type = "TextField" And Self.Parent.Type = "TableCell" Then
+			If OnFocus <> Null
+				If OnFocus.RealX < OnFocus.Parent.RealX Then OnFocus.Parent.HScroll.Value = OnFocus.Parent.HScroll.Value - (OnFocus.Parent.RealX - OnFocus.RealX)
+				If OnFocus.RealY < OnFocus.Parent.RealY Then OnFocus.Parent.VScroll.Value = OnFocus.Parent.VScroll.Value - (OnFocus.Parent.RealY - OnFocus.RealY)
+			
+				If OnFocus.RealX + OnFocus.W > OnFocus.Parent.RealX + OnFocus.Parent.W - (OnFocus.Parent.VScroll.Visible * OnFocus.Parent.VScroll.W) Then OnFocus.Parent.HScroll.Value = OnFocus.Parent.HScroll.Value + ( (OnFocus.RealX + OnFocus.W) - (OnFocus.Parent.RealX + OnFocus.Parent.W - ( (OnFocus.Parent.VScroll.Visible * OnFocus.Parent.VScroll.W))))
+				If OnFocus.RealY + OnFocus.H > OnFocus.Parent.RealY + OnFocus.Parent.H - (OnFocus.Parent.HScroll.Visible * OnFocus.Parent.HScroll.H) Then OnFocus.Parent.VScroll.Value = OnFocus.Parent.VScroll.Value + ( (OnFocus.RealY + OnFocus.H) - (OnFocus.Parent.RealY + OnFocus.Parent.H - ( (OnFocus.Parent.HScroll.Visible * OnFocus.Parent.HScroll.H))))
+			
+				If OnFocus.Parent.HScroll.Value < OnFocus.Parent.HScroll.Minimum Then OnFocus.Parent.HScroll.Value = OnFocus.Parent.HScroll.Minimum
+				If OnFocus.Parent.HScroll.Value > OnFocus.Parent.HScroll.Maximum Then OnFocus.Parent.HScroll.Value = OnFocus.Parent.HScroll.Maximum
+				If OnFocus.Parent.VScroll.Value < OnFocus.Parent.VScroll.Minimum Then OnFocus.Parent.VScroll.Value = OnFocus.Parent.VScroll.Minimum
+				If OnFocus.Parent.VScroll.Value > OnFocus.Parent.VScroll.Maximum Then OnFocus.Parent.VScroll.Value = OnFocus.Parent.VScroll.Maximum
+			
+			End If
+		End If
+		'Escape
+		If C = 27 Then
+			ActiveTextbox = Null
+			Return
+			'Enter
+		ElseIf C = 13 Then
+		
+			'######
+			SetBoxesENTER
+			
+			ActiveTextbox = Null
+						
+			Return
+			'Space
+		ElseIf C = 32 And Text.Length < MaxLength Then
+			BeforeText = BeforeText + " "
+			CursorLocation = CursorLocation + 1
+			'Backspace
+		Else If C = 8
+			BeforeText = BeforeText[ .. (BeforeText.Length - 1)]
+			If CursorLocation > 0 Then CursorLocation = CursorLocation - 1
+				
+			'Delete
+		Else If C = 127
+			AfterText = AfterText[ (1) ..]
+			'Other Codes
+		Else
+			'Symbols1
+			If C > 32 And C < 48 And ActiveTextbox.AllowSymbols = 1 And Text.Length < MaxLength Then
+				BeforeText = BeforeText + String.FromChar(C)
+				CursorLocation = CursorLocation + 1
+				'Symbols2
+			Elseif C > 57 And C < 65 And ActiveTextbox.AllowSymbols = 1 And Text.Length < MaxLength Then
+				BeforeText = BeforeText + String.FromChar(C)
+				CursorLocation = CursorLocation + 1
+				'Symbols3
+			Elseif C > 90 And C < 97 And ActiveTextbox.AllowSymbols = 1 And Text.Length < MaxLength Then
+				BeforeText = BeforeText + String.FromChar(C)
+				CursorLocation = CursorLocation + 1
+				'Symbols4
+			Elseif C > 122 And C < 127 And ActiveTextbox.AllowSymbols = 1 And Text.Length < MaxLength Then
+				BeforeText = BeforeText + String.FromChar(C)
+				CursorLocation = CursorLocation + 1
+				'Numbers
+			Elseif C > 47 And C < 58 And ActiveTextbox.AllowNumbers = 1 And Text.Length < MaxLength Then
+				BeforeText = BeforeText + String.FromChar(C)
+				CursorLocation = CursorLocation + 1
+				'UCase
+			Elseif C > 64 And C < 91 And ActiveTextbox.AllowLetters = 1 And Text.Length < MaxLength Then
+				BeforeText = BeforeText + String.FromChar(C)
+				CursorLocation = CursorLocation + 1
+				'LCase
+			Elseif (C=45 or C=95 or C > 96 And C < 123) And ActiveTextbox.AllowLetters = 1 And Text.Length < MaxLength Then
+				BeforeText = BeforeText + String.FromChar(C)
+				CursorLocation = CursorLocation + 1
+			End If
+		End If
+		
+		'Put Input on Textbox.Text
+		ActiveTextbox.Text = BeforeText + AfterText
+						
+	End Method
+
+End Class
+
+
+Class Gui_TextBox Extends Gui
+	
+	Method New(X, Y, W, H, Parent:Gui, Text:String = "", AllowNumbers = 1, AllowLetters = 1, AllowSymbols = 1, Wordwrapped = 0)
+		Self.Type = "TextBox"
+		Self.X = X
+		Self.Y = Y
+		Self.W = W
+		Self.H = H
+		Self.Wordwrapped = Wordwrapped
+		Self.AllowNumbers = AllowNumbers
+		Self.AllowLetters = AllowLetters
+		Self.AllowSymbols = AllowSymbols
+		Self.Text = Text
+		Self.Parent = Parent
+		Self.Parent.Children.AddLast(Self)
+		Self.Children = New List<Gui>
+		Self.VScroll = Gui.CreateVScrollbar(W - 15, 0, 15, H, 0, 20, Self, 0, 0)
+		Self.HScroll = Gui.CreateHScrollbar(0, H - 15, W - 15, 15, 0, 20, Self, 0, 0)
+		ZOrder(Self.Parent)
+		
+		'Get TextLines[]
+		If Wordwrapped = 1 Then
+			Local WW = W - 4
+			If VScroll.Visible Then WW = WW - 15
+			WordWrap(WW - 2)
+		Else
+			TextLines = Text.Split("~n")
+		End If
+		
+	End Method
+	
+	
+	Method Draw2()
+		Local AtlasX = 350
+		Local AtlasY = 20
+		If Gui.Over = Self Then AtlasY = 50
+		If Gui.Down = Self Then AtlasY = 80
+		If Gui.ActiveTextbox = Self Then AtlasY = 110
+		If Self.RealActive = 0 Then AtlasY = 140
+		
+		Gui.Draw3x3(RealX, RealY, W, H, AtlasX, AtlasY, 30, 30, 10)
+
+		
+		Local OldAlpha:Float = GetAlpha()
+		If Self.RealActive = 0 Then SetAlpha(GetAlpha() -0.6)
+		
+		'Adjust for sliders
+		Local WW = W - 4
+		Local HH = H - 4
+		If VScroll.Visible = 1 Then WW = WW - 16
+		If HScroll.Visible = 1 Then HH = HH - 16
+		Local TextY = RealY + 2
+		Local TextX = RealX + 2
+		TextX = TextX - HScroll.Value
+		TextY = TextY - VScroll.Value
+		SetScissorWithinSelf(1, 1, WW + 4, HH + 4)
+		
+		'DrawText (From TextLines)
+		Local YY
+		SetFont(NormalFont)
+		For Local i:String = Eachin TextLines
+			DrawText(i, TextX, TextY + YY)
+			YY = YY + TextHeight("Testing123")
+			
+		Next
+		
+		SetScissor(DrawingX, DrawingY, DrawingW, DrawingH)
+		'Limit X And Lines
+		If ActiveTextbox = Self Then
+			If CursorLine > TextLines.Length - 1 Then CursorLine = TextLines.Length - 1
+			If CursorX > TextLines[CursorLine].Length Then CursorX = TextLines[CursorLine].Length
+		End If
+		
+		'Draw Cursor
+		If Gui.ActiveTextbox = Self Then
+			If CursorOn = 1 Or KeyIsdown = 1 Then
+			
+				
+				Local CX = RealX - HScroll.Value + TextWidth(TextLines[CursorLine][ .. CursorX] + "Testing123") - TextWidth("Testing123") + 4
+				Local CY = RealY - VScroll.Value + (TextHeight("Testing123") * CursorLine)
+
+				SetColor(0, 0, 0)
+				SetAlpha(1)
+				DrawLine(CX, CY + 3, CX, CY + TextHeight("Testing123") - 2)
+				SetAlpha(OldAlpha)
+				SetColor(255, 255, 255)
+			End If
+			
+			If CurserTimer < Millisecs() Then
+				If CursorOn = 1 Then
+					CursorOn = 0
+				Else
+					CursorOn = 1
+				End If
+				CurserTimer = Millisecs() +500
+			End If
+		End If
+		
+		SetAlpha(OldAlpha)
+
+	End Method
+	
+	
+	Method Update2()
+		'Input
+		If ActiveTextbox = Self Then GetBoxText()
+		
+		'Get TextLines[]
+		If Wordwrapped = 1 Then
+			Local WW = W - 4
+			If VScroll.Visible Then WW = WW - 15
+			WordWrap(WW - 2)
+		Else
+			TextLines = Text.Split("~n")
+		End If
+
+		'Update Curser X And Line Based on Location
+		If ActiveTextbox = Self Then
+			Local Count = 0, Found = 0
+			For Local l = 0 To TextLines.Length - 1
+				Count = Count + TextLines[l].Length
+				If CursorLocation <= Count Then
+					CursorLine = l
+					CursorX = 0
+					Count = Count - TextLines[l].Length
+					Found = 1
+					Exit
+				End If
+				Count = Count + 1
+			Next
+			If Found = 0 Then
+				CursorLine = TextLines.Length
+				'Error TextLines.Length - 1
+				Count = 0
+			End If
+			CursorX = CursorLocation - Count
+			If Self.Wordwrapped = 1 Then CursorX = CursorX + WrapOffset
+		End If
+		
+		'Clicked
+		If Gui.Clicked = Self Then
+			If Gui.ActiveTextbox <> Self Then
+				Gui.ActiveTextbox = Self
+				Self.TextActive = 1
+			End If
+			
+			'Get Cursor Location NON Wordwrapped
+			If Wordwrapped < 2 Then
+				
+				SetFont(NormalFont)
+
+				'Get Line
+				Local Found = 0
+				For Local l = 0 To TextLines.Length - 1
+					Local YY = RealY + 2 - VScroll.Value + (l * TextHeight("Testing123"))
+					
+					If TouchY() >= YY And TouchY() < YY + TextHeight("Testing123") Then
+						Found = 1
+						CursorLine = l
+					End If
+				Next
+				If Found = 0 Then CursorLine = TextLines.Length - 1
+				
+				'Get Cursor X
+				Found = 0
+				For Local i = 1 To TextLines[CursorLine].Length
+					Local XX = RealX + 2 - HScroll.Value
+					If TouchX() <= XX + (TextWidth(TextLines[CursorLine][ .. i] + "Testing123")) - TextWidth("Testing123") Then
+						CursorX = (i - 1)
+						Found = 1
+						Exit
+					End If
+				Next
+				If Found = 0 Then CursorX = TextLines[CursorLine].Length
+				
+				'Get Location
+				Local Counter = 0
+				For Local l = 0 To CursorLine
+					Counter = Counter + (TextLines[l].Length)
+				Next
+				CursorLocation = Counter - TextLines[CursorLine][CursorX ..].Length + CursorLine
+
+			End If ' Ind If NOT Wordwrapped
+			
+		End If 'End If Clicked
+		
+		'UpdateScrollBars
+		Local RenderedText:String, First = 1
+		For Local i:String = Eachin TextLines
+			If First = 1 Then
+				RenderedText = i
+				First = 0
+			Else
+				RenderedText = RenderedText + "~n" + i
+			End If
+		Next
+		
+		
+		'If Wordwrapped = 1 Then
+		'	HScroll.Visible = 0 HScroll.Value = 0
+		'Else
+		'	HScroll.Visible = 1
+		'End If
+		SetFont(NormalFont)
+		If TextWidth(RenderedText) + 10 > W - (VScroll.Visible * 15) And Wordwrapped = 0 Then
+			If HScroll.Visible = 0 Then
+				HScroll.Visible = 1
+				ForceUpdateScrollbars()
+			End If
+			HScroll.Minimum = 0
+			If HScroll.Maximum <> TextWidth(RenderedText) - W + (VScroll.Visible * 15) + 10 Then
+				HScroll.Maximum = TextWidth(RenderedText) - W + (VScroll.Visible * 15) + 10
+				If Wordwrapped = 1 Then ForceUpdateScrollbars()
+			Endif
+			
+		Else
+			If HScroll.Visible = 1 Then
+				HScroll.Visible = 0
+				ForceUpdateScrollbars()
+				
+			End If
+			HScroll.Value = 0
+		End If
+		
+		If TextHeight(RenderedText) + 10 > H - (HScroll.Visible * 15) Then
+			If VScroll.Visible = 0 Then
+				VScroll.Visible = 1
+				ForceUpdateScrollbars()
+			End If
+			VScroll.Minimum = 0
+			If VScroll.Maximum <> TextHeight(RenderedText) - H + (HScroll.Visible * 15) + 2 + 10 Then
+				VScroll.Maximum = TextHeight(RenderedText) - H + (HScroll.Visible * 15) + 2 + 10
+				If Wordwrapped = 1 Then ForceUpdateScrollbars()
+			End If
+		Else
+			If VScroll.Visible = 1 Then
+				VScroll.Visible = 0
+				ForceUpdateScrollbars()
+			End If
+			VScroll.Value = 0
+		End If
+		
+		VScroll.X = W - 16
+		VScroll.Y = 1
+		VScroll.W = 15
+		VScroll.H = H - 2
+		HScroll.X = 1
+		HScroll.Y = H - 16
+		HScroll.W = W - 2
+		HScroll.H = 15
+		If VScroll.Visible Then HScroll.W = W - 17
+		'HScroll.Minimum = 0
+		'VScroll.Minimum = 0
+		Local WW = W - 4
+		Local HH = H - 4
+		If VScroll.Visible = 1 Then WW = WW - 16
+		If HScroll.Visible = 1 Then HH = HH - 16
+		'HScroll.Maximum = NormalFont.GetTxtWidth(RenderedText) - WW
+		'VScroll.Maximum = NormalFont.GetTxtHeight(RenderedText) - HH
+
+	End Method
+	
+	
+	Function ForceUpdateScrollbars()
+		
+		If ActiveTextbox <> Null Then
+			Local XX = ActiveTextbox.RealY + 2
+			Local YY = ActiveTextbox.RealX + 2
+			Local TextX = XX - ActiveTextbox.HScroll.Value
+			Local TextY = YY - ActiveTextbox.VScroll.Value
+			Local WW = ActiveTextbox.W - 20
+			Local HH = ActiveTextbox.H - 20
+			If ActiveTextbox.VScroll.Visible = 1 Then WW = WW - 16
+			If ActiveTextbox.HScroll.Visible = 1 Then HH = HH - 16
+			
+			If CursorLine < 0 Then CursorLine = 0
+			If CursorLine > ActiveTextbox.TextLines.Length - 1 Then CursorLine = ActiveTextbox.TextLines.Length - 1
+			If CursorX < 0 Then CursorX = 0
+			If CursorX > ActiveTextbox.TextLines[CursorLine].Length Then CursorX = ActiveTextbox.TextLines[CursorLine].Length
+		
+			
+			'Adjusts The value if the cursor is out of bounds
+			SetFont(NormalFont)
+			Local CX = TextWidth(ActiveTextbox.TextLines[CursorLine][ .. CursorX] + "Testing123") - TextWidth("Testing123") - 17
+			Local CY = (TextHeight("Testing123") * CursorLine) + 2
+			
+			If ActiveTextbox.VScroll.Visible = 1 Then
+				If CY < ActiveTextbox.VScroll.Value Then ActiveTextbox.VScroll.Value = ActiveTextbox.VScroll.Value - (ActiveTextbox.VScroll.Value - CY)
+				If CY > HH + ActiveTextbox.VScroll.Value Then ActiveTextbox.VScroll.Value = ActiveTextbox.VScroll.Value + (CY - (HH + ActiveTextbox.VScroll.Value))
+			End If
+			
+			If ActiveTextbox.HScroll.Visible = 1 Then
+				If CX < ActiveTextbox.HScroll.Value Then ActiveTextbox.HScroll.Value = ActiveTextbox.HScroll.Value - (ActiveTextbox.HScroll.Value - CX)
+				If CX + 17 > WW + ActiveTextbox.HScroll.Value Then ActiveTextbox.HScroll.Value = ActiveTextbox.HScroll.Value + (CX + 17 - (WW + ActiveTextbox.HScroll.Value))
+			End If
+			
+			If CursorLine >= ActiveTextbox.TextLines.Length - 1 And ActiveTextbox.VScroll.Visible = 1 Then ActiveTextbox.VScroll.Value = ActiveTextbox.VScroll.Maximum
+		End If
+	End Function
+	
+	
+	Method WordWrap(Width)
+		WrapOffset = 0
+		Local Text:String = Self.Text.Replace("~n", "~n ")
+		Local Txt:String[] = Text.Split(" ")
+	
+		Local LongWordsRemoved:List<String> = New List<String>
+		
+		'Split Long Words Here
+		SetFont(NormalFont)
+		For Local i = 0 To Txt.Length - 1
+			If TextWidth(Txt[i].Replace("~n", "")) <= Width Then
+				LongWordsRemoved.AddLast(Txt[i])
+			Else
+				Local TempText:String = Txt[i], Counter = 1
+				While TempText.Length > 0
+					If TextWidth(TempText.Replace("~n", "")) < Width Then
+						LongWordsRemoved.AddLast(TempText)
+						TempText = ""
+						Counter = 0
+					Elseif TextWidth(TempText[ .. Counter].Replace("~n", "") + "L") > Width Then
+						LongWordsRemoved.AddLast(TempText[ .. Counter])
+						TempText = TempText[Counter ..]
+						
+						Counter = 0
+					End If
+					Counter = Counter + 1
+				Wend
+			End If
+		Next
+		
+		'Convert LongWords into String
+		Local NoLongWords:String, First = 1
+		For Local i:String = Eachin LongWordsRemoved
+			If First = 1 Then
+				NoLongWords = i
+				First = 0
+			Else
+				NoLongWords = NoLongWords + " " + i
+			End If
+		Next
+		
+		'Wordwrap Spaces and new lines
+		Local StringToSplit:String[] = NoLongWords.Split(" ")
+		Local ReturnLines:List<String> = New List<String>
+		
+		Local WordLine:String = StringToSplit[0]
+		SetFont(NormalFont)
+		For Local i = 1 To StringToSplit.Length - 1
+			If WordLine.Contains("~n") Then
+				ReturnLines.AddLast(WordLine.Replace("~n", ""))
+				WordLine = ""
+			End If
+			
+			If WordLine <> "" Then
+				If TextWidth(WordLine + " " + StringToSplit[i]) < Width Then
+					WordLine = WordLine + " " + StringToSplit[i]
+				Else
+					ReturnLines.AddLast(WordLine)
+					WordLine = StringToSplit[i]
+				End If
+			Else
+				If TextWidth(StringToSplit[i]) < Width Then
+					WordLine = StringToSplit[i]
+				Else
+					ReturnLines.AddLast(WordLine)
+					WordLine = StringToSplit[i]
+				End If
+			End If
+			
+		Next
+		ReturnLines.AddLast(WordLine)
+		
+		
+		'Add To TextLines
+		Local ReturnString:String
+		First = 1
+		For Local i:String = Eachin ReturnLines
+			If First = 1 Then
+				ReturnString = i
+				First = 0
+			Else
+				ReturnString = ReturnString + "~n" + i
+			End If
+		Next
+		
+		TextLines = ReturnString.Split("~n")
+		
+	End Method
+	
+	Method GoToLocation(Line, X)
+		If Line < 1 Then
+			CursorLine = 0
+			CursorX = X
+		Endif
+		
+		If Line > 0 Then
+			CursorLine = Line
+			CursorX = X
+			If Line > TextLines.Length - 1 Then
+				CursorLine = TextLines.Length - 1
+			End If
+		Endif
+		
+		'Limit
+		If CursorLine < 0 Then CursorLine = 0
+		If CursorLine > TextLines.Length - 1 Then CursorLine = TextLines.Length - 1
+		If CursorX > TextLines[CursorLine].Length Then CursorX = TextLines[CursorLine].Length
+		If CursorX < 0 Then CursorX = 0
+		
+		'Get Location
+		Local Counter = 0
+		For Local l = 0 To CursorLine
+			Counter = Counter + (TextLines[l].Length)
+		Next
+		CursorLocation = Counter - TextLines[CursorLine][CursorX ..].Length + CursorLine
+
+		ForceUpdateScrollbars()
+	End Method
+	
+	Method GetBoxText()
+		
+		'Arrow Adjust
+		If KeyHit(KEY_LEFT) And CursorLocation > 0 Then
+			CursorLocation = CursorLocation - 1
+		End If
+			
+		If KeyHit(KEY_RIGHT) And CursorLocation < ActiveTextbox.Text.Length Then
+			CursorLocation = CursorLocation + 1
+		End If
+		If KeyHit(KEY_UP) Then
+			GoToLocation(CursorLine - 1, CursorX)
+		End If
+		If KeyHit(KEY_DOWN) Then
+			GoToLocation(CursorLine + 1, CursorX)
+		End If
+			
+							
+		If KeyDown(KEY_LEFT) And KeyIsdown = 0 Then
+			KeyIsdown = 1
+			KeydownTimer = Millisecs() +700
+		Elseif KeyDown(KEY_LEFT) And KeyIsdown = 1 Then
+			If KeydownTimer < Millisecs() Then
+				If CursorLocation > 0 Then
+					CursorLocation = CursorLocation - 1
+				End If
+				KeydownTimer = Millisecs() +50
+			End If
+		Elseif KeyDown(KEY_RIGHT) And KeyIsdown = 0 Then
+			KeyIsdown = 1
+			KeydownTimer = Millisecs() +700
+		Elseif KeyDown(KEY_RIGHT) And KeyIsdown = 1 Then
+			If KeydownTimer < Millisecs() Then
+				If CursorLocation < ActiveTextbox.Text.Length Then
+					CursorLocation = CursorLocation + 1
+						
+				End If
+				KeydownTimer = Millisecs() +50
+			End If
+		Elseif KeyDown(KEY_UP) And KeyIsdown = 0 Then
+			KeyIsdown = 1
+			KeydownTimer = Millisecs() +700
+		Elseif KeyDown(KEY_UP) And KeyIsdown = 1 Then
+			If KeydownTimer < Millisecs() Then
+				GoToLocation(CursorLine - 1, CursorX)
+				KeydownTimer = Millisecs() +50
+			End If
+		Elseif KeyDown(KEY_DOWN) And KeyIsdown = 0 Then
+			KeyIsdown = 1
+			KeydownTimer = Millisecs() +700
+		Elseif KeyDown(KEY_DOWN) And KeyIsdown = 1 Then
+			If KeydownTimer < Millisecs() Then
+				GoToLocation(CursorLine + 1, CursorX)
+				KeydownTimer = Millisecs() +50
+			End If
+				
+		Else
+			KeyIsdown = 0
+		End If
+		
+	
+		'==INPUT==
+		Local BeforeText:String = ActiveTextbox.Text[ .. CursorLocation]
+		Local AfterText:String = ActiveTextbox.Text[CursorLocation ..]
+		Local C = GetChar()
+			
+			
+		'Escape
+		If C = 27 Then
+			ActiveTextbox = Null
+			Return
+			'Enter
+		Elseif C = 13 Then
+			BeforeText = BeforeText + "~n"
+			CursorLocation = CursorLocation + 1
+			CursorLine = CursorLine + 1
+			CursorX = 0
+			ForceUpdateScrollbars()
+			'Space
+		Elseif C = 32 Then
+			BeforeText = BeforeText + " "
+			CursorLocation = CursorLocation + 1
+			'Backspace
+		Else If C = 8
+			BeforeText = BeforeText[ .. (BeforeText.Length - 1)]
+			If CursorLocation > 0 Then CursorLocation = CursorLocation - 1
+				
+			'Delete
+		Else If C = 127
+			AfterText = AfterText[ (1) ..]
+			'Other Codes
+		Else
+			'Symbols1
+			If C > 32 And C < 48 And ActiveTextbox.AllowSymbols = 1 Then
+				BeforeText = BeforeText + String.FromChar(C)
+				CursorLocation = CursorLocation + 1
+				'Symbols2
+			Elseif C > 57 And C < 65 And ActiveTextbox.AllowSymbols = 1 Then
+				BeforeText = BeforeText + String.FromChar(C)
+				CursorLocation = CursorLocation + 1
+				'Symbols3
+			Elseif C > 90 And C < 97 And ActiveTextbox.AllowSymbols = 1 Then
+				BeforeText = BeforeText + String.FromChar(C)
+				CursorLocation = CursorLocation + 1
+				'Symbols4
+			Elseif C > 122 And C < 127 And ActiveTextbox.AllowSymbols = 1 Then
+				BeforeText = BeforeText + String.FromChar(C)
+				CursorLocation = CursorLocation + 1
+				'Numbers
+			Elseif C > 47 And C < 58 And ActiveTextbox.AllowNumbers = 1 Then
+				BeforeText = BeforeText + String.FromChar(C)
+				CursorLocation = CursorLocation + 1
+				'UCase
+			Elseif C > 64 And C < 91 And ActiveTextbox.AllowLetters = 1 Then
+				BeforeText = BeforeText + String.FromChar(C)
+				CursorLocation = CursorLocation + 1
+				'LCase
+			Elseif C > 96 And C < 123 And ActiveTextbox.AllowLetters = 1 Then
+				BeforeText = BeforeText + String.FromChar(C)
+				CursorLocation = CursorLocation + 1
+			End If
+		End If
+		
+		'Put Input on Textbox.Text
+		ActiveTextbox.Text = BeforeText + AfterText
+		If C > 7 Then ForceUpdateScrollbars()
+						
+	End Method
+End Class
+
