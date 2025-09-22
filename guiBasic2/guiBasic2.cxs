@@ -2,8 +2,6 @@
 
 Import mojo2
 
-Import msxcompilercx
-
 
 Import brl.databuffer
 
