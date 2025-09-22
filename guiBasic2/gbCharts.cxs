@@ -379,7 +379,7 @@ Class Gui_Chart Extends Gui
 			points[ (i + 1) * 2] = x + Cos(aStart + (i * div)) * xRadius
 			points[ ( (i + 1) * 2) + 1] = y - Sin(aStart + (i * div)) * yRadius
 		Next
-		DrawPoly(points)
+		canv.DrawPoly(points)
 	End Function
 	
 	
