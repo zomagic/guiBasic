@@ -2596,9 +2596,12 @@ Class Gui
 	
 	End Function
 
-	Function DrawText(t:String, x, y)
+	Function DrawText(t:String, x, y, xhandle:Float = 0, yhandle:Float = 0)
 	
-		canv.DrawText(t, x, y, 0, 0)
+		Local x1 = x + TextWidth(t) * xhandle
+		Local y1 = y + TextHeight(t) * yhandle
+		
+		canv.DrawText(t, x1, y1, 0, 0)
 	
 	End Function
 
